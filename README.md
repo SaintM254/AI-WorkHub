@@ -44,7 +44,7 @@ From the repository **Code** tab, select the `arena/458767d4-ai-workhub` branch 
 - **Course descriptions, price, duration, FAQs:** `index.html`
 - **Colours, fonts, mobile layout:** `styles.css`
 - **Planner checklist and interactions:** `script.js` (update the price/duration here too if they change)
-- **Placeholder logo / favicon:** replace `assets/logo.svg` with your custom SVG, keeping the same filename. It is used in the header, footer and browser tab.
+- **Custom logo:** `assets/logo.svg` contains the supplied full stacked brain-and-chip logo. `assets/logo-horizontal.svg` arranges the same artwork and wordmark horizontally for the header and footer. `assets/favicon.svg` uses the brain-and-chip symbol alone for legibility in the browser tab. Poppins lettering has been converted to vector paths so it renders consistently without installed fonts. Update all three variants for future brand changes.
 - **Hero photo:** replace `assets/students.jpg`. The current image is AI-generated, depicting young Kenyan adult learners; it does not depict actual enrolled students. Update the image alt text and the footer disclosure if you replace it with a real authorised photo.
 
 Before taking applications, add your real enrolment contact, cohort dates, delivery format, final service list and payment process. If collecting personal information later, add a suitable privacy policy and secure form service/backend. GitHub Pages itself only hosts static files.
