@@ -8,7 +8,7 @@ A responsive, academic-style website for a Kenyan AI education institution. Buil
 - Fee: **KSh 10,000**
 - Working programme name: AI Essentials & Automation
 
-The requested services screenshot was not available in this conversation. Curriculum topics are explicitly marked as provisional. Dates, venue, contact details and delivery format must be confirmed before opening enrolment. The single-step **Join now** form asks for full name, email and phone, plus full payment (KSh 10,000) or two instalments (KSh 5,000 on enrolment and KSh 5,000 to receive a certificate). The backend is not connected: **Send application** validates the fields and clearly reports that nothing has been sent. Data is not transmitted or persistently stored; closing the form keeps entries only in the current page until refresh. No payment is taken.
+The requested services screenshot was not available in this conversation. Curriculum topics are draft content pending owner confirmation; public-facing draft labels have been removed. Dates, venue, contact details and delivery format must be confirmed before opening enrolment. The single-step **Join now** form asks for full name, email and phone, plus full payment (KSh 10,000) or two instalments (KSh 5,000 on enrolment and KSh 5,000 to receive a certificate). The backend is not connected: **Send application** validates the fields and clearly reports that nothing has been sent. Data is not transmitted or persistently stored; closing the form keeps entries only in the current page until refresh. No payment is taken.
 
 ## Publish on GitHub Pages — beginner instructions
 
@@ -46,7 +46,7 @@ From the repository **Code** tab, select the `arena/458767d4-ai-workhub` branch 
 - **Application form and payment amounts:** `index.html`
 - **Form validation, payment display and full-screen mobile navigation:** `script.js` and `styles.css`
 - **Custom logo:** `assets/logo.svg` contains the supplied full stacked brain-and-chip logo. `assets/logo-horizontal.svg` arranges the same artwork and wordmark horizontally for the header and footer. `assets/favicon.svg` uses the brain-and-chip symbol alone for legibility in the browser tab. Poppins lettering has been converted to vector paths so it renders consistently without installed fonts. Update all three variants for future brand changes.
-- **Hero photo:** replace `assets/students.jpg`. The current image is AI-generated, depicting young Kenyan adult learners; it does not depict actual enrolled students. Update the image alt text and the footer disclosure if you replace it with a real authorised photo.
+- **Hero photo:** replace `assets/students.jpg`. The current image is AI-generated, depicting young Kenyan adult learners; it does not depict actual enrolled students. Update the image alt text if you replace it with a real authorised photo.
 
 Before taking applications, add your real enrolment contact, cohort dates, delivery format, final service list and payment process. If collecting personal information later, add a suitable privacy policy and secure form service/backend. GitHub Pages itself only hosts static files.
 
@@ -71,7 +71,7 @@ Open `http://localhost:3000` on the same computer. Stop the server with Ctrl+C. 
 
 ## Connecting application submissions later
 
-The `application-form` submit handler in `script.js` has a marked backend integration point. The fields are `fullName`, `email`, `phone`, and `paymentPlan` (`full` or `instalments`). Replace the preview-only status with an HTTPS request to your backend. Add server-side validation, abuse protection, a privacy notice and appropriate consent before collecting personal information. Derive authoritative prices on the server rather than trusting browser values. Display success only after the server confirms receipt, handle failures, and disable duplicate sends while a request is pending. Update the visible preview notice and enrolment FAQ when submissions are live. Never put API secrets in this static website.
+The `application-form` submit handler in `script.js` has a marked backend integration point. The fields are `fullName`, `email`, `phone`, and `paymentPlan` (`full` or `instalments`). Replace the preview-only status with an HTTPS request to your backend. Add server-side validation, abuse protection, a privacy notice and appropriate consent before collecting personal information. Derive authoritative prices on the server rather than trusting browser values. Display success only after the server confirms receipt, handle failures, and disable duplicate sends while a request is pending. Update the submission status and enrolment FAQ when submissions are live. Never put API secrets in this static website.
 
 Mobile navigation fills the viewport, locks background scrolling, makes background content inert, supports Escape and keyboard focus trapping, and includes a lower close button for one-handed use. The application uses a native accessible dialog with a labelled title, autocomplete fields, native radio choices and an announced submission status.
 

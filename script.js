@@ -79,7 +79,7 @@ form.addEventListener('submit', event => {
   // Backend integration point: validate server-side and submit over HTTPS here.
   // Do not show success or clear the form until the server confirms receipt.
   // This preview deliberately performs no network request or persistent storage.
-  status.textContent = 'Your application has not been sent. Online submission is not connected yet. Please return when applications open. No payment has been taken.';
+  status.textContent = 'Applications aren’t open yet. Your details have not been sent. Please check back soon.';
   status.focus();
 });
 document.querySelector('#year').textContent = new Date().getFullYear();
