@@ -76,3 +76,23 @@ body.application-open,body.menu-open{overflow:hidden}
  .header nav.open .button{margin-top:10px;min-height:46px}
  .header nav.open .menu-close{margin-bottom:0;min-height:46px}
 }
+
+/* Desktop navigation remains available while content passes beneath the glass. */
+@media(min-width:801px){
+ html{scroll-padding-top:130px}
+ .header{position:sticky;top:0;z-index:50;max-width:none;background:rgba(248,247,240,.96);border-bottom:1px solid rgba(36,61,48,.12);box-shadow:0 5px 24px rgba(36,61,48,.055);padding-left:max(30px,calc((100vw - 1304px)/2));padding-right:max(30px,calc((100vw - 1304px)/2))}
+ @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .header{background:rgba(248,247,240,.78);-webkit-backdrop-filter:blur(20px) saturate(130%);backdrop-filter:blur(20px) saturate(130%)}
+ }
+}
+@media(min-width:801px) and (max-width:1000px){
+ .header{gap:16px;padding-left:24px;padding-right:24px}
+ .header .brand-logo{width:205px}
+ .header nav{gap:14px;font-size:11px}
+ .header .button.small{padding:12px 14px;gap:14px}
+}
+/* Photographic interpretation of the original orbital illustration. */
+figure.outcome-art{margin:0;display:block;min-height:0;background:#e8ebd8;isolation:isolate}
+.outcome-photo{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover}
+.outcome-art .art-label{position:static;display:block;padding:15px 10px 16px;text-align:center;font-size:8px;letter-spacing:1.5px;line-height:1.7;color:var(--ink)}
+@media(max-width:580px){.outcome-art .art-label{font-size:7px;letter-spacing:1.15px;padding:14px 8px}}

@@ -74,3 +74,9 @@ Open `http://localhost:3000` on the same computer. Stop the server with Ctrl+C. 
 The `application-form` submit handler in `script.js` has a marked backend integration point. The fields are `fullName`, `email`, `phone`, and `paymentPlan` (`full` or `instalments`). Replace the preview-only status with an HTTPS request to your backend. Add server-side validation, abuse protection, a privacy notice and appropriate consent before collecting personal information. Derive authoritative prices on the server rather than trusting browser values. Display success only after the server confirms receipt, handle failures, and disable duplicate sends while a request is pending. Update the visible preview notice and enrolment FAQ when submissions are live. Never put API secrets in this static website.
 
 Mobile navigation fills the viewport, locks background scrolling, makes background content inert, supports Escape and keyboard focus trapping, and includes a lower close button for one-handed use. The application uses a native accessible dialog with a labelled title, autocomplete fields, native radio choices and an announced submission status.
+
+## Desktop navigation and outcomes imagery
+
+At widths above 800px, the header sticks to the top with a subtle translucent cream background, backdrop blur, and shadow. A near-opaque fallback protects readability when backdrop filters are unsupported. Section links allow space for the sticky header. Mobile retains its full-screen navigation.
+
+`assets/orbit-sculpture.jpg` is the AI-generated photographic interpretation of the original orbit-and-star illustration, used in the outcomes section. The image is lazy-loaded, includes descriptive alt text and retains the original caption as real HTML text.
