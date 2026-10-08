@@ -23,7 +23,8 @@ menu.addEventListener('click', () => {
 document.querySelector('.menu-close').addEventListener('click', () => closeMenu(true));
 nav.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
   closeMenu();
-  const target = document.querySelector(link.getAttribute('href'));
+  const href = link.getAttribute('href');
+  const target = href?.startsWith('#') && href.length > 1 ? document.querySelector(href) : null;
   if (target) { target.setAttribute('tabindex', '-1'); target.focus({ preventScroll: true }); }
 }));
 mobileLayout.addEventListener('change', () => closeMenu());
@@ -37,51 +38,11 @@ document.addEventListener('keydown', event => {
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
   }
 });
-const dialog = document.querySelector('#enrol-dialog');
-const form = document.querySelector('#application-form');
-const status = document.querySelector('#application-status');
-let applicationTrigger;
+// Google sign-in precedes applications; returning students use the same portal.
 document.querySelectorAll('[data-enrol]').forEach(button => button.addEventListener('click', () => {
-  applicationTrigger = button;
   closeMenu();
-  status.textContent = '';
-  dialog.showModal();
-  document.body.classList.add('application-open');
+  window.location.assign(new URL('student.html', window.location.href).href);
 }));
-document.querySelector('.close-dialog').addEventListener('click', () => dialog.close());
-dialog.addEventListener('close', () => {
-  document.body.classList.remove('application-open');
-  // A mobile navigation trigger is hidden after closing the menu.
-  if (mobileLayout.matches && nav.contains(applicationTrigger)) menu.focus();
-  else applicationTrigger?.focus();
-});
-dialog.addEventListener('click', event => {
-  const box = dialog.getBoundingClientRect();
-  if (event.target === dialog && (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) dialog.close();
-});
-form.addEventListener('change', () => {
-  document.querySelector('#instalment-details').hidden = form.elements.paymentPlan.value !== 'instalments';
-  status.textContent = '';
-});
-const nameInput = document.querySelector('#full-name');
-const phoneInput = document.querySelector('#phone');
-function validateContact() {
-  nameInput.setCustomValidity(nameInput.value.trim() ? '' : 'Please enter your full name.');
-  const phone = phoneInput.value.trim();
-  const digits = phone.replace(/\D/g, '');
-  phoneInput.setCustomValidity(/^\+?[\d\s().-]+$/.test(phone) && digits.length >= 7 && digits.length <= 15 ? '' : 'Please enter a valid phone number with 7–15 digits.');
-}
-[nameInput, phoneInput].forEach(input => input.addEventListener('input', validateContact));
-form.addEventListener('submit', event => {
-  event.preventDefault();
-  validateContact();
-  if (!form.reportValidity()) return;
-  // Backend integration point: validate server-side and submit over HTTPS here.
-  // Do not show success or clear the form until the server confirms receipt.
-  // This preview deliberately performs no network request or persistent storage.
-  status.textContent = 'Applications aren’t open yet. Your details have not been sent. Please check back soon.';
-  status.focus();
-});
 document.querySelector('#year').textContent = new Date().getFullYear();
 
 // Android browser controls can shift the visual viewport relative to layout coordinates.

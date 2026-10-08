@@ -1,6 +1,6 @@
 # AI WorkHub
 
-A responsive, academic-style website for a Kenyan AI education institution. Built with plain HTML, CSS and JavaScript — no build step, subscriptions, external fonts or runtime dependencies.
+A responsive, academic-style website for a Kenyan AI education institution. The public website uses plain HTML, CSS and JavaScript. The Google-first student portal bundles Supabase JS using a small esbuild build step; the output is still static and hosted on GitHub Pages. No external fonts are required.
 
 ## Programme
 
@@ -8,7 +8,9 @@ A responsive, academic-style website for a Kenyan AI education institution. Buil
 - Fee: **KSh 10,000**
 - Working programme name: AI Essentials & Automation
 
-The requested services screenshot was not available in this conversation. Curriculum topics are draft content pending owner confirmation; public-facing draft labels have been removed. Dates, venue, contact details and delivery format must be confirmed before opening enrolment. The single-step **Join now** form asks for full name, email and phone, plus full payment (KSh 10,000) or two instalments (KSh 5,000 on enrolment and KSh 5,000 to receive a certificate). The backend is not connected: **Send application** validates the fields and clearly reports that nothing has been sent. Data is not transmitted or persistently stored; closing the form keeps entries only in the current page until refresh. No payment is taken.
+**Google-first student portal:** `student.html` provides login, applications, enrolment status, verified payment balance, private learning files and certificate access. It is not live-connected yet: `portal-config.js` has empty public settings, and Supabase/Google must be configured by the owner. Follow **[SUPABASE_SETUP.md](SUPABASE_SETUP.md)** for every setup button, redirect URL, SQL step and security check.
+
+The curriculum remains draft content pending owner confirmation. Confirm cohort dates, delivery format, final services and privacy/retention practices before accepting students. No payments are collected automatically. Owners use the private Supabase dashboard for approval, recording verified payments and publishing files; there is no custom admin interface yet.
 
 ## Publish on GitHub Pages — beginner instructions
 
@@ -43,8 +45,11 @@ From the repository **Code** tab, select the `arena/458767d4-ai-workhub` branch 
 
 - **Course descriptions, price, duration, FAQs:** `index.html`
 - **Colours, fonts, mobile layout:** `styles.css`
-- **Application form and payment amounts:** `index.html`
-- **Form validation, payment display and full-screen mobile navigation:** `script.js` and `styles.css`
+- **Application form and payment amounts:** `student.html` (also keep public programme prices in `index.html` in sync)
+- **Student authentication, database calls and validation:** `src/portal.js`, `src/validation.js`
+- **Public mobile navigation:** `script.js` and `styles.css`
+- **Portal styling:** `portal.css`
+- **Database and access policies:** `supabase/schema.sql`
 - **Custom logo:** `assets/logo.svg` contains the supplied full stacked brain-and-chip logo. `assets/logo-horizontal.svg` arranges the same artwork and wordmark horizontally for the header and footer. `assets/favicon.svg` uses the brain-and-chip symbol alone for legibility in the browser tab. Poppins lettering has been converted to vector paths so it renders consistently without installed fonts. Update all three variants for future brand changes.
 - **Hero photo:** replace `assets/students.jpg`. The current image is AI-generated, depicting young Kenyan adult learners; it does not depict actual enrolled students. Update the image alt text if you replace it with a real authorised photo.
 
@@ -52,9 +57,12 @@ Before taking applications, add your real enrolment contact, cohort dates, deliv
 
 ## Local preview
 
-With Python installed, open a terminal in this folder and run:
+With Node.js 22+ and Python installed, open a terminal in this folder and run:
 
 ```sh
+npm ci
+npm test
+npm run build
 python3 -m http.server 3000 --bind 0.0.0.0
 ```
 
@@ -66,14 +74,16 @@ Open `http://localhost:3000` on the same computer. Stop the server with Ctrl+C. 
 - System Georgia serif and Arial/Helvetica sans-serif keep the site fast and avoid external font dependencies.
 - Responsive breakpoints at 1100, 800 and 580 pixels; reduced-motion support; keyboard focus indicators; native modal dialog and FAQ disclosures.
 - Node JavaScript syntax check: `node --check script.js`.
-- Automated real-browser testing could not run in the sandbox because the browser download host was blocked. Check the deployed site on a phone and desktop before opening enrolment.
-- Only `index.html`, `styles.css`, `script.js` and `assets/` are published. Documentation and repository files are excluded from the deployment artifact.
+- The portal was smoke-tested in headless Chromium at desktop and mobile widths. Tests covered unconfigured sign-in, homepage routing, and an application/dashboard/sign-out flow with mocked Supabase responses. Real Google OAuth still requires owner configuration and live testing.
+- The workflow builds the portal and publishes the public HTML, CSS, JavaScript, `portal-config.js`, bundled `dist/` and assets. SQL, tests, source files, node_modules and documentation are not published. The repository itself is public: never commit student files or secrets.
 
-## Connecting application submissions later
+## Authentication and data security
 
-The `application-form` submit handler in `script.js` has a marked backend integration point. The fields are `fullName`, `email`, `phone`, and `paymentPlan` (`full` or `instalments`). Replace the preview-only status with an HTTPS request to your backend. Add server-side validation, abuse protection, a privacy notice and appropriate consent before collecting personal information. Derive authoritative prices on the server rather than trusting browser values. Display success only after the server confirms receipt, handle failures, and disable duplicate sends while a request is pending. Update the submission status and enrolment FAQ when submissions are live. Never put API secrets in this static website.
+Read [SUPABASE_SETUP.md](SUPABASE_SETUP.md). The portal uses Google OAuth with PKCE. Authenticated users can submit their own application and read their own records, but approval/payment writes are reserved for trusted operators. Row-level policies also gate private file access. Students get 60-second signed file links only when eligible. Google email comes from the authenticated account, not an editable form field. Database constraints validate application values independently of browser validation.
 
-Mobile navigation fills the viewport, locks background scrolling, makes background content inert, supports Escape and keyboard focus trapping, and includes a lower close button for one-handed use. The application uses a native accessible dialog with a labelled title, autocomplete fields, native radio choices and an announced submission status.
+`npm test` includes an embedded Postgres (PGlite) test of the actual schema and RLS with two student identities plus an anonymous role. These local tests do not replace live Google OAuth and Supabase Storage tests after setup.
+
+Mobile navigation fills the viewport, locks background scrolling, makes background content inert, supports Escape and keyboard focus trapping, and includes a lower close button for one-handed use. Join now navigates to the student portal.
 
 ## Desktop navigation and outcomes imagery
 

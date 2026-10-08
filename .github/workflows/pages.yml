@@ -19,12 +19,23 @@ jobs:
     steps:
       - name: Check out website
         uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Build and test portal
+        run: |
+          npm ci
+          npm test
+          npm run build
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Prepare public files
         run: |
           mkdir _site
-          cp index.html styles.css script.js _site/
+          cp index.html student.html privacy.html styles.css portal.css script.js portal-config.js _site/
+          cp -R dist _site/dist
           cp -R assets _site/assets
       - name: Upload website
         uses: actions/upload-pages-artifact@v3
