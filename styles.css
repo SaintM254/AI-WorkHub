@@ -96,3 +96,26 @@ figure.outcome-art{margin:0;display:block;min-height:0;background:#e8ebd8;isolat
 .outcome-photo{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover}
 .outcome-art .art-label{position:static;display:block;padding:15px 10px 16px;text-align:center;font-size:8px;letter-spacing:1.5px;line-height:1.7;color:var(--ink)}
 @media(max-width:580px){.outcome-art .art-label{font-size:7px;letter-spacing:1.15px;padding:14px 8px}}
+
+/* About and direct contact */
+.contact-card{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:48px;background:#eef0e4;border:1px solid #dce1ce;border-radius:8px;padding:32px 36px;margin-top:-34px}
+.contact-intro .eyebrow{font-size:8px;margin-bottom:13px}
+.contact-intro h3{font-size:34px;letter-spacing:-1px;margin-bottom:14px}
+.about .contact-intro p{font-size:12px;max-width:330px;margin:0}
+.contact-links{min-width:0}
+.whatsapp-contact{display:flex;align-items:center;gap:14px;background:var(--ink);color:var(--paper);padding:18px 20px;border-radius:5px;min-height:80px;transition:background .2s}
+.whatsapp-contact:hover{background:#3e5845}
+.contact-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#ffffff12;flex-shrink:0}
+.contact-icon svg{width:25px;height:25px}
+.whatsapp-contact small{display:block;font-size:8px;letter-spacing:1.5px;color:#d9e3c9}
+.whatsapp-contact strong{font-size:22px;font-weight:400;letter-spacing:.6px;line-height:1.5}
+.contact-arrow{margin-left:auto;font-size:25px}
+.social-links{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.social-link{display:flex;align-items:center;gap:10px;min-height:68px;padding:12px 14px;border:1px solid #d2d9c6;border-radius:5px;background:var(--paper);color:var(--ink);font-size:12px;text-align:left;line-height:1.5}
+.social-link svg{width:22px;height:22px;flex-shrink:0}
+.social-link small{display:block;font-size:9px;color:var(--muted);margin-top:2px}
+.social-arrow{margin-left:auto}
+a.social-link:hover{border-color:#87956b;background:#fff}
+.social-unavailable{cursor:not-allowed;color:#777e6e;background:#e8ecdf}
+@media(max-width:1000px){.contact-card{gap:24px;padding:28px;margin-top:-10px}.social-links{gap:8px}.social-link{padding:12px 10px;gap:8px}}
+@media(max-width:650px){.contact-card{grid-template-columns:1fr;padding:25px 22px;gap:23px;margin-top:0}.contact-intro h3{font-size:32px}.about .contact-intro p{max-width:none}.whatsapp-contact{padding:15px}.whatsapp-contact strong{font-size:22px}}

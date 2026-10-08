@@ -80,3 +80,7 @@ Mobile navigation fills the viewport, locks background scrolling, makes backgrou
 At widths above 800px, the header sticks to the top with a subtle translucent cream background, backdrop blur, and shadow. A near-opaque fallback protects readability when backdrop filters are unsupported. Section links allow space for the sticky header. Mobile retains its full-screen navigation.
 
 `assets/orbit-sculpture.jpg` is the AI-generated photographic interpretation of the original orbit-and-star illustration, used in the outcomes section. The image is lazy-loaded, includes descriptive alt text and retains the original caption as real HTML text.
+
+## About and contact details
+
+The About us section includes a contact card. WhatsApp displays **0742 330 046** and uses `https://wa.me/254742330046` (international Kenyan format with no leading zero or plus). TikTok links to `https://www.tiktok.com/@ai.workhub`. Instagram is intentionally a disabled, non-clickable button labelled “Coming soon”; replace it with a real link only when an account URL is available. Social icons are inline SVGs with accessible labels. Contact details and URLs can be edited in `index.html`.
