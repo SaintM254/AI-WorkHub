@@ -136,14 +136,14 @@ figure.outcome-art{margin:0;display:block;min-height:0;background:#e8ebd8;isolat
  .menu-open .menu-toggle{top:calc(var(--mobile-viewport-top,0px) + env(safe-area-inset-top,0px) + 20px)}
 }
 
-/* One consistent left-aligned column for mobile menu text and actions. */
+/* Large menu links align to the outer left edge of both action buttons. */
 @media(max-width:800px){
  .header nav.open::before,
  .header nav.open>a,
  .header nav.open .button,
- .header nav.open .menu-close{width:min(88%,300px);text-align:left;padding-left:24px;padding-right:24px}
- .header nav.open::before{border-left:1px solid transparent;border-right:1px solid transparent}
- .header nav.open>a{font-size:clamp(20px,5.5vw,28px);border:1px solid transparent}
+ .header nav.open .menu-close{width:min(88%,300px);text-align:left}
+ .header nav.open::before{padding-left:0;padding-right:0;border:0}
+ .header nav.open>a{font-size:clamp(26px,4.5vh,38px);padding-left:0;padding-right:0;border:0}
  .header nav.open .button,
- .header nav.open .menu-close{justify-content:space-between}
+ .header nav.open .menu-close{justify-content:space-between;padding-left:24px;padding-right:24px}
 }
