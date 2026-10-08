@@ -117,3 +117,14 @@ figure.outcome-art{margin:0;display:block;min-height:0;background:#e8ebd8;isolat
 .faq{margin-top:55px}
 @media(max-width:800px){.about-us{gap:30px;padding-top:45px;padding-bottom:45px}.about-us-copy p{font-size:13px}}
 @media(max-width:580px){.about-us{grid-template-columns:1fr;gap:25px;padding-top:40px;padding-bottom:35px}.about-us-copy p{max-width:none}.about-contact{gap:6px}.faq{margin-top:40px}}
+
+/* Mobile glass lives on a separate layer so fixed menu controls stay viewport-sized. */
+@media(max-width:800px){
+ html{scroll-padding-top:110px}
+ .header{position:sticky;top:0;z-index:50;isolation:isolate;background:transparent;border-bottom:1px solid rgba(36,61,48,.12);box-shadow:0 5px 24px rgba(36,61,48,.055)}
+ .header::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;background:rgba(248,247,240,.96)}
+ @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .header::before{background:rgba(248,247,240,.78);-webkit-backdrop-filter:blur(20px) saturate(130%);backdrop-filter:blur(20px) saturate(130%)}
+ }
+ .menu-open .header::before{visibility:hidden}
+}
