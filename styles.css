@@ -50,13 +50,18 @@ body.application-open,body.menu-open{overflow:hidden}
 #application-status{font-size:12px;line-height:1.7;color:var(--ink)}
 #application-status:not(:empty){margin-top:14px;padding:13px;border:1px solid #c4cbb5;border-radius:6px;background:#edf2e6}
 @media(max-width:800px){
- .header nav.open{position:fixed;inset:0;z-index:100;min-height:100vh;height:100dvh;padding:80px 28px max(24px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;overflow-y:auto;overscroll-behavior:contain;background:var(--paper);box-shadow:none;border:0}
- .header nav.open:before{content:'YOUR NEXT CHAPTER';font-size:9px;letter-spacing:2.5px;color:var(--muted);margin-top:auto;margin-bottom:20px}
+ .header nav.open{position:fixed;inset:0;z-index:100;min-height:100vh;height:100dvh;padding:80px 28px max(24px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;overflow-y:auto;overscroll-behavior:contain;background:var(--ink);color:var(--paper);box-shadow:none;border:0}
+ .header nav.open:before{content:'YOUR NEXT CHAPTER';font-size:9px;letter-spacing:2.5px;color:rgba(248,247,240,.65);margin-top:auto;margin-bottom:20px}
  .header nav.open>a{font:400 clamp(26px,4.5vh,38px)/1.2 Georgia,serif;letter-spacing:-.7px;text-align:center;width:min(100%,380px);padding:13px 10px;min-height:52px;border-radius:6px}
- .header nav.open>a:hover{background:#e9eddf}
- .header nav.open .button{width:min(100%,340px);min-height:54px;margin-top:26px;font-size:14px;padding:17px 24px}
- .header nav.open .menu-close{display:flex;align-items:center;justify-content:center;gap:14px;min-height:52px;width:min(100%,340px);background:none;border:1px solid var(--line);color:var(--ink);border-radius:4px;font-size:13px;margin-bottom:5vh}
+ .header nav.open>a{color:var(--paper)}
+ .header nav.open>a:hover{background:rgba(248,247,240,.08);color:var(--paper)}
+ .header nav.open .button{width:min(88%,300px);min-height:54px;margin-top:26px;font-size:14px;padding:17px 24px;background:var(--paper);color:var(--ink);border-color:var(--paper);box-shadow:0 6px 16px rgba(0,0,0,.16)}
+ .header nav.open .button:hover{background:#e9eddf;border-color:#e9eddf;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+ .header nav.open .menu-close{display:flex;align-items:center;justify-content:center;gap:14px;min-height:52px;width:min(100%,340px);background:none;border:1px solid rgba(248,247,240,.25);color:var(--paper);border-radius:4px;font-size:13px;margin-bottom:5vh}
+ .header nav.open .menu-close:hover{background:rgba(248,247,240,.08)}
+ .header nav.open :focus-visible,.menu-open .menu-toggle:focus-visible{outline-color:var(--paper)}
  .menu-close span{font-size:23px;line-height:1}
+ .menu-open .menu-toggle span{background:var(--paper)}
  .menu-open .menu-toggle{position:fixed;top:20px;right:22px;z-index:101;min-width:44px;min-height:44px}
  .menu-open .menu-toggle span:first-child{transform:translateY(4px) rotate(45deg)}
  .menu-open .menu-toggle span:last-child{transform:translateY(-4px) rotate(-45deg)}
