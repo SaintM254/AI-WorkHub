@@ -1,3 +1,4 @@
+import { readCallback, authFeedback, cleanCallbackUrl } from './auth-feedback.js';
 import { createClient } from '@supabase/supabase-js';
 import { validateApplication, isConfigured, balanceFromPayments } from './validation.js';
 const $ = id => document.getElementById(id);
@@ -106,10 +107,11 @@ loginButton.addEventListener('click', async () => {
   loginButton.disabled = true;
   notice('Opening Google sign-in…');
   try {
+    history.replaceState(null, '', cleanCallbackUrl(location.href));
     const callback = new URL('student.html', window.location.href);
     const { error } = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: callback.href } });
     if (error) throw error;
-  } catch { notice('Google sign-in couldn’t start. Please try again or contact AI WorkHub.', true); loginButton.disabled = false; }
+  } catch (error) { notice(authFeedback(error), true); loginButton.disabled = false; }
 });
 $('sign-out').addEventListener('click', async () => {
   $('sign-out').disabled = true;
@@ -147,20 +149,32 @@ $('student-application').addEventListener('submit', async event => {
 });
 async function start() {
   if (!isConfigured(config)) { showLogin(); notice('Student sign-in is being set up. For enrolment help, WhatsApp 0742 330 046.'); return; }
-  client = createClient(config.supabaseUrl, config.supabasePublishableKey, { auth: { flowType: 'pkce', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } });
+  const callback = readCallback(location.href);
+  // Exchange explicitly: getSession alone can hide an initialization/callback error.
+  client = createClient(config.supabaseUrl, config.supabasePublishableKey, { auth: { flowType: 'pkce', detectSessionInUrl: false, persistSession: true, autoRefreshToken: true } });
   client.auth.onAuthStateChange(event => {
     if (event === 'SIGNED_OUT') { showLogin(); notice('Please sign in to access your student account.'); }
   });
   try {
+    if (callback.error || callback.errorCode) {
+      showLogin();
+      notice(authFeedback(callback), true);
+      return;
+    }
+    if (callback.code) {
+      notice('Completing your Google sign-in…');
+      const { error } = await client.auth.exchangeCodeForSession(callback.code);
+      if (error) throw error;
+    }
     const { data, error } = await client.auth.getSession();
     if (error) throw error;
     if (data.session) await loadMember();
-    else {
-      showLogin();
-      const oauthError = new URLSearchParams(location.search).has('error') || new URLSearchParams(location.hash.slice(1)).has('error');
-      notice(oauthError ? 'Sign-in was cancelled or could not be completed. Please try again.' : '', oauthError);
-      if (oauthError) history.replaceState(null, '', location.pathname);
-    }
-  } catch { showLogin(); notice('We couldn’t restore your sign-in. Please try Continue with Google again.', true); }
+    else { showLogin(); notice(''); }
+  } catch (error) {
+    showLogin();
+    notice(authFeedback(error), true);
+  } finally {
+    if (callback.code || callback.error || callback.errorCode) history.replaceState(null, '', cleanCallbackUrl(location.href));
+  }
 }
 start();
