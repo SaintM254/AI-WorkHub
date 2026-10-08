@@ -84,3 +84,7 @@ The desktop header is sticky; the mobile header is fixed to the viewport at a co
 ## About and contact details
 
 The final About us section follows the FAQ and includes a compact row of contact icons beneath its own description. Icons have explicit SVG width/height attributes as well as CSS dimensions to prevent oversized fallback rendering. WhatsApp displays **0742 330 046** and uses `https://wa.me/254742330046` (international Kenyan format with no leading zero or plus). TikTok links to `https://www.tiktok.com/@ai.workhub`. Instagram is intentionally a disabled, non-clickable icon with an accessible “Coming soon” label; replace it with a real link only when an account URL is available. Social icons are inline SVGs with accessible labels. Contact details and URLs can be edited in `index.html`.
+
+### Mobile browser viewport handling
+
+Mobile header/menu positioning follows `window.visualViewport.offsetTop` and the menu uses its visible height while browser controls expand/collapse. Safe-area padding is included, with a CSS-only fallback if the API is unavailable. Updates are coalesced with requestAnimationFrame; pinch zoom is not counteracted. Device-specific browser-toolbar behaviour still needs checking on a physical phone.

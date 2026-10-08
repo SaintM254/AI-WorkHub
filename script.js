@@ -83,3 +83,32 @@ form.addEventListener('submit', event => {
   status.focus();
 });
 document.querySelector('#year').textContent = new Date().getFullYear();
+
+// Android browser controls can shift the visual viewport relative to layout coordinates.
+// Keep the fixed mobile chrome at the visible top; do not counteract pinch zoom.
+function syncMobileViewport() {
+  const viewport = window.visualViewport;
+  const root = document.documentElement;
+  if (!mobileLayout.matches || !viewport || Math.abs(viewport.scale - 1) > 0.01) {
+    root.style.removeProperty('--mobile-viewport-top');
+    root.style.removeProperty('--mobile-viewport-height');
+    return;
+  }
+  root.style.setProperty('--mobile-viewport-top', `${Math.max(0, viewport.offsetTop)}px`);
+  root.style.setProperty('--mobile-viewport-height', `${viewport.height}px`);
+}
+let viewportFrame = 0;
+function queueViewportSync() {
+  if (viewportFrame) return;
+  viewportFrame = requestAnimationFrame(() => {
+    viewportFrame = 0;
+    syncMobileViewport();
+  });
+}
+window.visualViewport?.addEventListener('scroll', queueViewportSync, { passive: true });
+window.visualViewport?.addEventListener('resize', queueViewportSync, { passive: true });
+window.addEventListener('scroll', queueViewportSync, { passive: true });
+window.addEventListener('resize', queueViewportSync, { passive: true });
+window.addEventListener('pageshow', queueViewportSync);
+mobileLayout.addEventListener('change', queueViewportSync);
+syncMobileViewport();
