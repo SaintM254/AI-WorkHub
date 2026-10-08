@@ -77,7 +77,7 @@ Mobile navigation fills the viewport, locks background scrolling, makes backgrou
 
 ## Desktop navigation and outcomes imagery
 
-On desktop and mobile, the header sticks to the top with a subtle translucent cream background, backdrop blur, and shadow. Mobile applies the glass effect to a separate pseudo-element so it does not constrain the fixed full-screen menu. A near-opaque fallback protects readability when backdrop filters are unsupported. Section links allow space for the sticky header. Mobile retains its full-screen navigation.
+The desktop header is sticky; the mobile header is fixed to the viewport at a consistent 90px height, with matching body spacing to prevent overlap or initial scroll movement. Both use a subtle translucent cream background, backdrop blur, and shadow. Mobile applies the glass effect to a separate pseudo-element so it does not constrain the fixed full-screen menu. A near-opaque fallback protects readability when backdrop filters are unsupported. Section links allow space for the sticky header. Mobile retains its full-screen navigation.
 
 `assets/orbit-sculpture.jpg` is the AI-generated photographic interpretation of the original orbit-and-star illustration, used in the outcomes section. The image is lazy-loaded, includes descriptive alt text and retains the original caption as real HTML text.
 
