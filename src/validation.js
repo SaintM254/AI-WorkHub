@@ -11,6 +11,7 @@ export function isConfigured(config) {
   try {
     const url = new URL(config?.supabaseUrl);
     return url.protocol === 'https:' && url.hostname.endsWith('.supabase.co') &&
+      (url.pathname === '/' || url.pathname === '') && !url.search && !url.hash &&
       typeof config.supabasePublishableKey === 'string' && config.supabasePublishableKey.startsWith('sb_publishable_');
   } catch { return false; }
 }

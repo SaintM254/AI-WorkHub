@@ -12,7 +12,7 @@ test('blank name, invalid phone and unsupported payment plan are rejected', () =
 });
 test('configuration refuses secret keys, missing config and non-HTTPS endpoints', () => {
   assert.equal(isConfigured({supabaseUrl:'https://example.supabase.co',supabasePublishableKey:'sb_publishable_example'}),true);
-  for(const c of [{},{supabaseUrl:'https://example.supabase.co',supabasePublishableKey:'sb_secret_example'},{supabaseUrl:'http://example.supabase.co',supabasePublishableKey:'sb_publishable_example'}]) assert.equal(isConfigured(c),false);
+  for(const c of [{},{supabaseUrl:'https://example.supabase.co/rest/v1/',supabasePublishableKey:'sb_publishable_example'},{supabaseUrl:'https://example.supabase.co',supabasePublishableKey:'sb_secret_example'},{supabaseUrl:'http://example.supabase.co',supabasePublishableKey:'sb_publishable_example'}]) assert.equal(isConfigured(c),false);
 });
 test('balance uses verified payment rows, never selected instalment plan', () => {
   assert.equal(balanceFromPayments([]),10000);
