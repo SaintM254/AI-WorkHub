@@ -13,8 +13,21 @@
 <body class="portal-page">
 <header class="portal-header">
   <a href="index.html" aria-label="AI WorkHub home"><img src="assets/logo-horizontal.svg" width="240" height="46" alt="AI WorkHub"></a>
-  <a href="index.html" class="text-link">← Back to website</a>
+  <a href="index.html" class="text-link portal-back-link">← Back to website</a>
+  <button class="portal-menu-toggle" aria-expanded="false" aria-label="Open navigation" aria-controls="portal-mobile-nav" type="button">
+    <span></span><span></span><span></span>
+  </button>
 </header>
+<nav id="portal-mobile-nav" class="portal-mobile-nav" aria-label="Portal navigation">
+  <button class="portal-menu-close" type="button">
+    <span>✕</span> Close menu
+  </button>
+  <button type="button" class="portal-mobile-tab" data-tab="overview">Overview</button>
+  <button type="button" class="portal-mobile-tab" data-tab="progress">Course Progress</button>
+  <button type="button" class="portal-mobile-tab" data-tab="assignments">Assignments</button>
+  <button type="button" class="portal-mobile-tab" data-tab="financials">Financials &amp; Fees</button>
+  <button type="button" class="portal-mobile-tab" data-tab="resources">Resources &amp; Certs</button>
+</nav>
 <main class="portal-shell">
   <div id="portal-status" class="portal-status" role="status" aria-live="polite">Loading your student portal…</div>
 
