@@ -68,6 +68,11 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 // Validation module inlined
 
 const $ = id => document.getElementById(id);
+const setElemText = (id, text) => {
+  const el = $(id);
+  if (el) el.textContent = text;
+};
+
 const config = window.AI_WORKHUB_CONFIG;
 const loginButton = $('google-login');
 
@@ -83,6 +88,8 @@ function notice(text, error = false) {
   if (el) {
     el.textContent = text;
     el.classList.toggle('error', error);
+    if (!text) el.hidden = true;
+    else el.hidden = false;
   }
 }
 
@@ -145,23 +152,23 @@ function initTabs() {
 function showLogin() {
   identityVersion += 1;
   currentUser = null;
-  $('member-view').hidden = true;
-  $('dashboard').hidden = true;
-  $('new-application').hidden = true;
-  $('student-name').textContent = '';
-  $('student-email').textContent = '';
-  $('resource-list').replaceChildren();
-  $('certificate-list').replaceChildren();
-  $('student-application').reset();
-  $('submit-status').textContent = '';
-  $('student-instalments').hidden = true;
-  $('login-view').hidden = false;
+  if ($('member-view')) $('member-view').hidden = true;
+  if ($('dashboard')) $('dashboard').hidden = true;
+  if ($('new-application')) $('new-application').hidden = true;
+  setElemText('student-name', '');
+  setElemText('student-email', '');
+  if ($('resource-list')) $('resource-list').replaceChildren();
+  if ($('certificate-list')) $('certificate-list').replaceChildren();
+  if ($('student-application')) $('student-application').reset();
+  setElemText('submit-status', '');
+  if ($('student-instalments')) $('student-instalments').hidden = true;
+  if ($('login-view')) $('login-view').hidden = false;
   if (loginButton) loginButton.disabled = !client;
 }
 
 // PRIVATE FILE DOWNLOAD / OPEN
 async function openPrivateFile(bucket, path, button) {
-  button.disabled = true;
+  if (button) button.disabled = true;
   const tab = window.open('about:blank', '_blank');
   if (tab) tab.opener = null;
   try {
@@ -173,13 +180,14 @@ async function openPrivateFile(bucket, path, button) {
     tab?.close();
     notice('This file could not be opened. Your access may have changed. Refresh or contact AI WorkHub.', true);
   } finally {
-    button.disabled = false;
+    if (button) button.disabled = false;
   }
 }
 
 function renderFiles(items, container, bucket) {
+  if (!container) return;
   container.replaceChildren();
-  for (const item of items) {
+  for (const item of (items || [])) {
     const row = document.createElement('li');
     const title = document.createElement('h3');
     title.textContent = item.title;
@@ -257,10 +265,10 @@ function renderModules(completedSet, userId) {
   const completedCount = completedSet.size;
   const percentage = Math.round((completedCount / total) * 100);
 
-  if ($('overview-progress-text')) $('overview-progress-text').textContent = `${percentage}%`;
+  setElemText('overview-progress-text', `${percentage}%`);
   if ($('overview-progress-bar')) $('overview-progress-bar').style.width = `${percentage}%`;
-  if ($('overview-progress-sub')) $('overview-progress-sub').textContent = `${completedCount} of ${total} modules completed`;
-  if ($('progress-percentage-large')) $('progress-percentage-large').textContent = `${percentage}%`;
+  setElemText('overview-progress-sub', `${completedCount} of ${total} modules completed`);
+  setElemText('progress-percentage-large', `${percentage}%`);
   if ($('main-progress-bar-fill')) $('main-progress-bar-fill').style.width = `${percentage}%`;
 
   COURSE_MODULES.forEach((mod) => {
@@ -371,13 +379,13 @@ function initAssignmentUpload(userId) {
     const select = $('assignment-select');
     const notesInput = $('assignment-notes');
 
-    if (!fileInput.files.length) {
+    if (!fileInput || !fileInput.files.length) {
       if (statusMsg) statusMsg.textContent = 'Please choose a file to upload.';
       return;
     }
 
     const file = fileInput.files[0];
-    submitBtn.disabled = true;
+    if (submitBtn) submitBtn.disabled = true;
     if (statusMsg) statusMsg.textContent = 'Uploading assignment…';
 
     const subObj = {
@@ -385,7 +393,7 @@ function initAssignmentUpload(userId) {
       assignment_id: select.value,
       user_id: userId,
       file_name: `${select.options[select.selectedIndex].text} - ${file.name}`,
-      notes: notesInput.value.trim(),
+      notes: notesInput ? notesInput.value.trim() : '',
       status: 'submitted',
       submitted_at: new Date().toISOString()
     };
@@ -417,7 +425,7 @@ function initAssignmentUpload(userId) {
 
     if (statusMsg) statusMsg.textContent = 'Assignment submitted successfully!';
     form.reset();
-    submitBtn.disabled = false;
+    if (submitBtn) submitBtn.disabled = false;
     await loadSubmissions(userId);
   });
 }
@@ -428,9 +436,9 @@ function renderFinancials(application, payments) {
   const remaining = Math.max(0, 10000 - paid);
   const planName = (application && application.payment_plan === 'full') ? 'Full Payment (Upfront)' : 'Instalments (2 Parts)';
 
-  if ($('fin-selected-plan')) $('fin-selected-plan').textContent = `Plan: ${planName}`;
-  if ($('fin-total-paid')) $('fin-total-paid').textContent = money(paid);
-  if ($('fin-outstanding-balance')) $('fin-outstanding-balance').textContent = money(remaining);
+  setElemText('fin-selected-plan', `Plan: ${planName}`);
+  setElemText('fin-total-paid', money(paid));
+  setElemText('fin-outstanding-balance', money(remaining));
 
   if ($('fin-status-text')) {
     if (remaining === 0) $('fin-status-text').textContent = '✓ Fully Paid';
@@ -471,8 +479,8 @@ async function loadMember() {
   const version = identityVersion;
 
   if ($('refresh-dashboard')) $('refresh-dashboard').disabled = true;
-  $('dashboard').hidden = true;
-  $('new-application').hidden = true;
+  if ($('dashboard')) $('dashboard').hidden = true;
+  if ($('new-application')) $('new-application').hidden = true;
   notice('Loading your student portal…');
 
   try {
@@ -485,10 +493,10 @@ async function loadMember() {
     }
 
     currentUser = auth.user;
-    $('login-view').hidden = true;
-    $('member-view').hidden = false;
-    $('student-name').textContent = currentUser.user_metadata?.full_name || 'learner';
-    $('student-email').textContent = currentUser.email || '';
+    if ($('login-view')) $('login-view').hidden = true;
+    if ($('member-view')) $('member-view').hidden = false;
+    setElemText('student-name', currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || 'learner');
+    setElemText('student-email', currentUser.email || '');
 
     // Safely query applications without crashing if table is not created yet
     let application = null;
@@ -502,9 +510,9 @@ async function loadMember() {
     if (version !== identityVersion) return;
 
     if (!application) {
-      $('student-full-name').value = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || '';
-      $('new-application').hidden = false;
-      notice('Signed in as ' + (currentUser.email || 'learner') + '. Complete your registration below to get started.');
+      if ($('student-full-name')) $('student-full-name').value = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || '';
+      if ($('new-application')) $('new-application').hidden = false;
+      notice('Signed in as ' + (currentUser.email || 'learner') + '. Welcome! Complete your enrolment below.');
       return;
     }
 
@@ -522,18 +530,18 @@ async function loadMember() {
     const certificates = (certsRes.status === 'fulfilled' && !certsRes.value.error && certsRes.value.data) ? certsRes.value.data : [];
 
     const labels = { pending: 'Pending review', approved: 'Approved', declined: 'Not approved' };
-    $('enrolment-status').textContent = labels[application.status] || 'Under review';
-    $('enrolment-help').textContent = application.status === 'approved' ? 'Your classroom and modules are ready below.' : application.status === 'pending' ? 'We have your application. AI WorkHub will review it before granting full course access.' : 'Contact AI WorkHub to discuss your application.';
+    setElemText('enrolment-status', labels[application.status] || 'Under review');
+    setElemText('enrolment-help', application.status === 'approved' ? 'Your classroom and modules are ready below.' : application.status === 'pending' ? 'We have your application. AI WorkHub will review it before granting full course access.' : 'Contact AI WorkHub to discuss your application.');
 
-    $('payment-plan').textContent = application.payment_plan === 'full' ? 'Full payment' : 'Instalments';
-    $('payment-help').textContent = application.payment_plan === 'full' ? 'KSh 10,000 upfront.' : 'KSh 5,000 on enrolment + KSh 5,000 to receive your certificate.';
-    $('payment-balance').textContent = money(balanceFromPayments(payments));
+    setElemText('payment-plan', application.payment_plan === 'full' ? 'Full payment' : 'Instalments');
+    setElemText('payment-help', application.payment_plan === 'full' ? 'KSh 10,000 upfront.' : 'KSh 5,000 on enrolment + KSh 5,000 to receive your certificate.');
+    setElemText('payment-balance', money(balanceFromPayments(payments)));
 
-    $('resources-note').textContent = application.status !== 'approved' ? 'Learning resources unlock after your enrolment is approved.' : resources.length ? 'Your course files, available while you are enrolled.' : 'Your instructor has not published any resources yet. Check back soon.';
+    setElemText('resources-note', application.status !== 'approved' ? 'Learning resources unlock after your enrolment is approved.' : resources.length ? 'Your course files, available while you are enrolled.' : 'Your instructor has not published any resources yet. Check back soon.');
 
     renderFiles(resources, $('resource-list'), 'course-materials');
     renderFiles(certificates, $('certificate-list'), 'certificates');
-    $('certificate-note').textContent = certificates.length ? 'Your certificate has been released. Congratulations on your progress.' : 'Your certificate will appear after course completion, verified full payment and release by AI WorkHub.';
+    setElemText('certificate-note', certificates.length ? 'Your certificate has been released. Congratulations on your progress.' : 'Your certificate will appear after course completion, verified full payment and release by AI WorkHub.');
 
     // Load New Features Safely (Progress, Submissions, Financials)
     try {
@@ -556,7 +564,7 @@ async function loadMember() {
       console.warn('Financials render warning:', e);
     }
 
-    $('dashboard').hidden = false;
+    if ($('dashboard')) $('dashboard').hidden = false;
     activateTab('overview');
     notice('');
   } catch (err) {
@@ -586,7 +594,7 @@ loginButton?.addEventListener('click', async () => {
 });
 
 $('sign-out')?.addEventListener('click', async () => {
-  $('sign-out').disabled = true;
+  if ($('sign-out')) $('sign-out').disabled = true;
   try {
     const { error } = await client.auth.signOut({ scope: 'local' });
     if (error) throw error;
@@ -595,7 +603,7 @@ $('sign-out')?.addEventListener('click', async () => {
   } catch {
     notice('Sign out failed. Please try again.', true);
   } finally {
-    $('sign-out').disabled = false;
+    if ($('sign-out')) $('sign-out').disabled = false;
   }
 });
 
@@ -615,14 +623,14 @@ $('student-application')?.addEventListener('submit', async event => {
   const values = Object.fromEntries(new FormData(form));
   const validation = validateApplication(values);
   if (validation) {
-    $('submit-status').textContent = validation;
-    $('submit-status').focus();
+    setElemText('submit-status', validation);
+    if ($('submit-status')) $('submit-status').focus();
     return;
   }
 
   const button = form.querySelector('[type=submit]');
-  button.disabled = true;
-  $('submit-status').textContent = 'Sending your application…';
+  if (button) button.disabled = true;
+  setElemText('submit-status', 'Sending your application…');
 
   try {
     const { error } = await client.from('applications').insert({
@@ -636,13 +644,13 @@ $('student-application')?.addEventListener('submit', async event => {
       return;
     }
     if (error) throw error;
-    $('submit-status').textContent = '';
+    setElemText('submit-status', '');
     await loadMember();
   } catch {
-    $('submit-status').textContent = 'We couldn’t confirm your application. Your entries are still here. Try again or contact AI WorkHub.';
-    $('submit-status').focus();
+    setElemText('submit-status', 'We couldn’t confirm your application. Your entries are still here. Try again or contact AI WorkHub.');
+    if ($('submit-status')) $('submit-status').focus();
   } finally {
-    button.disabled = false;
+    if (button) button.disabled = false;
   }
 });
 
