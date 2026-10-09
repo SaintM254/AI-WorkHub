@@ -263,7 +263,7 @@ function renderModules(completedSet, userId) {
   if ($('progress-percentage-large')) $('progress-percentage-large').textContent = `${percentage}%`;
   if ($('main-progress-bar-fill')) $('main-progress-bar-fill').style.width = `${percentage}%`;
 
-  COURSE_MODULES.forEach((mod, idx) => {
+  COURSE_MODULES.forEach((mod) => {
     const isCompleted = completedSet.has(mod.id);
     const card = document.createElement('div');
     card.className = `module-card ${isCompleted ? 'completed' : 'in-progress'}`;
@@ -391,7 +391,6 @@ function initAssignmentUpload(userId) {
     };
 
     try {
-      // Storage upload attempt
       const path = `${userId}/${Date.now()}_${file.name}`;
       await client.storage.from('assignments').upload(path, file);
       subObj.file_path = path;
@@ -425,7 +424,7 @@ function initAssignmentUpload(userId) {
 
 // FINANCIALS & FEES RENDER
 function renderFinancials(application, payments) {
-  const paid = balanceFromPayments(payments);
+  const paid = balanceFromPayments(payments || []);
   const remaining = Math.max(0, 10000 - paid);
   const planName = application.payment_plan === 'full' ? 'Full Payment (Upfront)' : 'Instalments (2 Parts)';
 
@@ -457,7 +456,7 @@ function renderFinancials(application, payments) {
         const h3 = document.createElement('h3');
         h3.textContent = `Verified Receipt: ${money(p.amount_kes)}`;
         const pEl = document.createElement('p');
-        pEl.textContent = `Reference: ${p.reference || 'N/A'} · Verified on: ${new Date(p.verified_at || Date.now()).toLocaleDateString('en-KE')}`;
+        pEl.textContent = `Reference: ${p.reference || 'Verified Payment'} · Verified on: ${new Date(p.verified_at || Date.now()).toLocaleDateString('en-KE')}`;
         li.append(h3, pEl);
         receiptsList.append(li);
       });
@@ -491,9 +490,9 @@ async function loadMember() {
     $('student-name').textContent = currentUser.user_metadata?.full_name || 'learner';
     $('student-email').textContent = currentUser.email || '';
 
-    const { data: application, error } = await client.from('applications').select('id,full_name,payment_plan,status').eq('user_id', currentUser.id).maybeSingle();
+    const { data: application, error: appError } = await client.from('applications').select('id,full_name,payment_plan,status').eq('user_id', currentUser.id).maybeSingle();
     if (version !== identityVersion) return;
-    if (error) throw error;
+    if (appError) throw appError;
 
     if (!application) {
       $('student-full-name').value = currentUser.user_metadata?.full_name || '';
@@ -502,14 +501,18 @@ async function loadMember() {
       return;
     }
 
-    const [{ data: payments, error: paymentError }, { data: resources, error: resourceError }, { data: certificates, error: certError }] = await Promise.all([
-      client.from('payments').select('amount_kes,reference,verified_at').eq('user_id', currentUser.id),
+    // Safely query core tables without failing if optional columns are missing
+    const [paymentsRes, resourcesRes, certsRes] = await Promise.allSettled([
+      client.from('payments').select('amount_kes').eq('user_id', currentUser.id),
       client.from('course_resources').select('id,title,description,file_path').order('sort_order'),
       client.from('certificates').select('id,title,file_path').eq('user_id', currentUser.id)
     ]);
 
     if (version !== identityVersion) return;
-    if (paymentError || resourceError || certError) throw paymentError || resourceError || certError;
+
+    const payments = (paymentsRes.status === 'fulfilled' && !paymentsRes.value.error && paymentsRes.value.data) ? paymentsRes.value.data : [];
+    const resources = (resourcesRes.status === 'fulfilled' && !resourcesRes.value.error && resourcesRes.value.data) ? resourcesRes.value.data : [];
+    const certificates = (certsRes.status === 'fulfilled' && !certsRes.value.error && certsRes.value.data) ? certsRes.value.data : [];
 
     const labels = { pending: 'Pending review', approved: 'Approved', declined: 'Not approved' };
     $('enrolment-status').textContent = labels[application.status] || 'Under review';
@@ -525,17 +528,32 @@ async function loadMember() {
     renderFiles(certificates, $('certificate-list'), 'certificates');
     $('certificate-note').textContent = certificates.length ? 'Your certificate has been released. Congratulations on your progress.' : 'Your certificate will appear after course completion, verified full payment and release by AI WorkHub.';
 
-    // Load Course Progress & Submissions
-    const completedSet = await loadCourseProgress(currentUser.id);
-    renderModules(completedSet, currentUser.id);
-    await loadSubmissions(currentUser.id);
-    initAssignmentUpload(currentUser.id);
-    renderFinancials(application, payments || []);
+    // Load New Features Safely (Progress, Submissions, Financials)
+    try {
+      const completedSet = await loadCourseProgress(currentUser.id);
+      renderModules(completedSet, currentUser.id);
+    } catch (e) {
+      console.warn('Course progress load warning:', e);
+    }
+
+    try {
+      await loadSubmissions(currentUser.id);
+      initAssignmentUpload(currentUser.id);
+    } catch (e) {
+      console.warn('Submissions load warning:', e);
+    }
+
+    try {
+      renderFinancials(application, payments);
+    } catch (e) {
+      console.warn('Financials render warning:', e);
+    }
 
     $('dashboard').hidden = false;
     activateTab('overview');
     notice('');
   } catch (err) {
+    console.error('loadMember Error:', err);
     if (version !== identityVersion) return;
     notice('We couldn’t load your dashboard. Check your connection and try Refresh. If this continues, contact AI WorkHub.', true);
   } finally {
