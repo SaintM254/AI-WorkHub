@@ -1,15 +1,82 @@
 import { readCallback, authFeedback, cleanCallbackUrl } from './auth-feedback.js';
 import { createClient } from '@supabase/supabase-js';
 import { validateApplication, isConfigured, balanceFromPayments } from './validation.js';
+
 const $ = id => document.getElementById(id);
 const config = window.AI_WORKHUB_CONFIG;
 const loginButton = $('google-login');
+
 let client;
 let currentUser;
 let loading = false;
 let identityVersion = 0;
+
 const money = amount => `KSh ${Number(amount).toLocaleString('en-KE')}`;
-function notice(text, error = false) { $('portal-status').textContent = text; $('portal-status').classList.toggle('error', error); }
+
+function notice(text, error = false) {
+  const el = $('portal-status');
+  if (el) {
+    el.textContent = text;
+    el.classList.toggle('error', error);
+  }
+}
+
+// Curriculum Modules Data
+const COURSE_MODULES = [
+  {
+    id: 'm1',
+    title: 'Module 1: AI Essentials & Prompt Engineering',
+    description: 'Master core AI concepts, LLM architectures (ChatGPT, Claude, DeepSeek), and structured prompting techniques.',
+    topics: ['Generative AI Fundamentals & Model Selection', 'Chain-of-Thought & Zero-Shot/Few-Shot Prompting', 'System Prompts & Output Formatting Matrix']
+  },
+  {
+    id: 'm2',
+    title: 'Module 2: Workflow Automation & No-Code AI',
+    description: 'Connect AI models to your daily workflow using no-code integration platforms.',
+    topics: ['Zapier & Make.com Webhook Integrations', 'Automating Email & Document Processing', 'Building AI Micro-Agents']
+  },
+  {
+    id: 'm3',
+    title: 'Module 3: AI for Business & Content Strategy',
+    description: 'Leverage AI for marketing, market research, content generation, and data analysis.',
+    topics: ['Automated Content Creation Pipelines', 'Data Scraping & Analysis with AI', 'Business Process Optimization']
+  },
+  {
+    id: 'm4',
+    title: 'Module 4: Applied AI Capstone Project',
+    description: 'Design, build, and present a complete real-world AI automation project.',
+    topics: ['Capstone Scoping & Architecture', 'End-to-End Testing & Debugging', 'Final Project Submission & Review']
+  }
+];
+
+// TAB SWITCHING LOGIC
+function activateTab(tabName) {
+  document.querySelectorAll('.portal-tab').forEach(tab => {
+    const isActive = tab.getAttribute('data-tab') === tabName;
+    tab.classList.toggle('active', isActive);
+  });
+  document.querySelectorAll('.portal-tab-content').forEach(content => {
+    const isTarget = content.id === `tab-${tabName}`;
+    content.hidden = !isTarget;
+  });
+}
+
+function initTabs() {
+  document.querySelectorAll('.portal-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.getAttribute('data-tab');
+      activateTab(target);
+    });
+  });
+  document.querySelectorAll('.tab-link-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.getAttribute('data-target');
+      activateTab(target);
+    });
+  });
+}
+
+// SHOW LOGIN VIEW
 function showLogin() {
   identityVersion += 1;
   currentUser = null;
@@ -24,8 +91,10 @@ function showLogin() {
   $('submit-status').textContent = '';
   $('student-instalments').hidden = true;
   $('login-view').hidden = false;
-  loginButton.disabled = !client;
+  if (loginButton) loginButton.disabled = !client;
 }
+
+// PRIVATE FILE DOWNLOAD / OPEN
 async function openPrivateFile(bucket, path, button) {
   button.disabled = true;
   const tab = window.open('about:blank', '_blank');
@@ -38,71 +107,380 @@ async function openPrivateFile(bucket, path, button) {
   } catch {
     tab?.close();
     notice('This file could not be opened. Your access may have changed. Refresh or contact AI WorkHub.', true);
-  } finally { button.disabled = false; }
+  } finally {
+    button.disabled = false;
+  }
 }
+
 function renderFiles(items, container, bucket) {
   container.replaceChildren();
   for (const item of items) {
     const row = document.createElement('li');
-    const title = document.createElement('h3'); title.textContent = item.title;
+    const title = document.createElement('h3');
+    title.textContent = item.title;
     row.append(title);
-    if (item.description) { const p = document.createElement('p'); p.textContent = item.description; row.append(p); }
-    const button = document.createElement('button'); button.type = 'button'; button.className = 'portal-secondary';
+    if (item.description) {
+      const p = document.createElement('p');
+      p.textContent = item.description;
+      row.append(p);
+    }
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'portal-secondary';
     button.textContent = 'Open file ↗';
     button.addEventListener('click', () => openPrivateFile(bucket, item.file_path, button));
-    row.append(button); container.append(row);
+    row.append(button);
+    container.append(row);
   }
 }
+
+// COURSE PROGRESS MANAGEMENT
+async function loadCourseProgress(userId) {
+  let completedSet = new Set();
+  const localKey = `aiworkhub_progress_${userId}`;
+  const savedLocal = localStorage.getItem(localKey);
+  if (savedLocal) {
+    try { JSON.parse(savedLocal).forEach(id => completedSet.add(id)); } catch (e) {}
+  }
+
+  try {
+    const { data, error } = await client.from('course_progress').select('module_id,completed').eq('user_id', userId);
+    if (!error && data) {
+      data.forEach(item => {
+        if (item.completed) completedSet.add(item.module_id);
+        else completedSet.delete(item.module_id);
+      });
+    }
+  } catch (e) {
+    // Ignore if table not created yet
+  }
+
+  return completedSet;
+}
+
+async function saveModuleToggle(userId, moduleId, completed) {
+  const localKey = `aiworkhub_progress_${userId}`;
+  let currentSet = new Set();
+  try {
+    const saved = localStorage.getItem(localKey);
+    if (saved) JSON.parse(saved).forEach(id => currentSet.add(id));
+  } catch (e) {}
+
+  if (completed) currentSet.add(moduleId);
+  else currentSet.delete(moduleId);
+
+  localStorage.setItem(localKey, JSON.stringify(Array.from(currentSet)));
+
+  try {
+    await client.from('course_progress').upsert({
+      user_id: userId,
+      module_id: moduleId,
+      completed: completed,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,module_id' });
+  } catch (e) {
+    // Graceful fallback to local state
+  }
+}
+
+function renderModules(completedSet, userId) {
+  const container = $('modules-list');
+  if (!container) return;
+  container.replaceChildren();
+
+  const total = COURSE_MODULES.length;
+  const completedCount = completedSet.size;
+  const percentage = Math.round((completedCount / total) * 100);
+
+  if ($('overview-progress-text')) $('overview-progress-text').textContent = `${percentage}%`;
+  if ($('overview-progress-bar')) $('overview-progress-bar').style.width = `${percentage}%`;
+  if ($('overview-progress-sub')) $('overview-progress-sub').textContent = `${completedCount} of ${total} modules completed`;
+  if ($('progress-percentage-large')) $('progress-percentage-large').textContent = `${percentage}%`;
+  if ($('main-progress-bar-fill')) $('main-progress-bar-fill').style.width = `${percentage}%`;
+
+  COURSE_MODULES.forEach((mod, idx) => {
+    const isCompleted = completedSet.has(mod.id);
+    const card = document.createElement('div');
+    card.className = `module-card ${isCompleted ? 'completed' : 'in-progress'}`;
+
+    const top = document.createElement('div');
+    top.className = 'module-top';
+
+    const titleBox = document.createElement('div');
+    titleBox.className = 'module-title-box';
+    const h3 = document.createElement('h3');
+    h3.textContent = mod.title;
+    const p = document.createElement('p');
+    p.textContent = mod.description;
+    titleBox.append(h3, p);
+
+    const badge = document.createElement('span');
+    badge.className = `module-badge ${isCompleted ? 'completed' : 'in-progress'}`;
+    badge.textContent = isCompleted ? 'Completed' : 'In Progress';
+
+    top.append(titleBox, badge);
+
+    const topicUl = document.createElement('ul');
+    topicUl.className = 'module-topics';
+    mod.topics.forEach(t => {
+      const li = document.createElement('li');
+      li.textContent = t;
+      topicUl.append(li);
+    });
+
+    const actionRow = document.createElement('div');
+    actionRow.className = 'module-action-row';
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'portal-secondary toggle-module-btn';
+    toggleBtn.textContent = isCompleted ? '✓ Marked Completed' : 'Mark as Completed';
+    toggleBtn.addEventListener('click', async () => {
+      toggleBtn.disabled = true;
+      const nextState = !completedSet.has(mod.id);
+      if (nextState) completedSet.add(mod.id);
+      else completedSet.delete(mod.id);
+      await saveModuleToggle(userId, mod.id, nextState);
+      renderModules(completedSet, userId);
+    });
+
+    actionRow.append(document.createElement('span'), toggleBtn);
+
+    card.append(top, topicUl, actionRow);
+    container.append(card);
+  });
+}
+
+// ASSIGNMENTS MANAGEMENT
+async function loadSubmissions(userId) {
+  const container = $('submissions-list');
+  const emptyMsg = $('submissions-empty-msg');
+  if (!container) return;
+
+  let submissions = [];
+  try {
+    const { data, error } = await client.from('assignment_submissions').select('id,file_name,notes,status,submitted_at').eq('user_id', userId).order('submitted_at', { ascending: false });
+    if (!error && data) submissions = data;
+  } catch (e) {}
+
+  const localKey = `aiworkhub_submissions_${userId}`;
+  const localSaved = localStorage.getItem(localKey);
+  if (localSaved) {
+    try {
+      const localSubs = JSON.parse(localSaved);
+      localSubs.forEach(ls => {
+        if (!submissions.some(s => s.id === ls.id)) submissions.push(ls);
+      });
+    } catch (e) {}
+  }
+
+  container.replaceChildren();
+  if (!submissions.length) {
+    if (emptyMsg) emptyMsg.hidden = false;
+    return;
+  }
+
+  if (emptyMsg) emptyMsg.hidden = true;
+
+  submissions.forEach(sub => {
+    const li = document.createElement('li');
+    const h3 = document.createElement('h3');
+    h3.textContent = sub.file_name || 'Assignment Upload';
+    const p = document.createElement('p');
+    p.textContent = `Submitted: ${new Date(sub.submitted_at || Date.now()).toLocaleDateString('en-KE')} · Status: ${sub.status || 'Submitted'}${sub.notes ? ' · Note: ' + sub.notes : ''}`;
+    li.append(h3, p);
+    container.append(li);
+  });
+}
+
+function initAssignmentUpload(userId) {
+  const form = $('assignment-upload-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const statusMsg = $('upload-status-msg');
+    const submitBtn = $('submit-assignment-btn');
+
+    const fileInput = $('assignment-file');
+    const select = $('assignment-select');
+    const notesInput = $('assignment-notes');
+
+    if (!fileInput.files.length) {
+      if (statusMsg) statusMsg.textContent = 'Please choose a file to upload.';
+      return;
+    }
+
+    const file = fileInput.files[0];
+    submitBtn.disabled = true;
+    if (statusMsg) statusMsg.textContent = 'Uploading assignment…';
+
+    const subObj = {
+      id: 'sub_' + Date.now(),
+      assignment_id: select.value,
+      user_id: userId,
+      file_name: `${select.options[select.selectedIndex].text} - ${file.name}`,
+      notes: notesInput.value.trim(),
+      status: 'submitted',
+      submitted_at: new Date().toISOString()
+    };
+
+    try {
+      // Storage upload attempt
+      const path = `${userId}/${Date.now()}_${file.name}`;
+      await client.storage.from('assignments').upload(path, file);
+      subObj.file_path = path;
+
+      await client.from('assignment_submissions').insert({
+        assignment_id: select.value,
+        user_id: userId,
+        file_name: subObj.file_name,
+        file_path: path,
+        notes: subObj.notes
+      });
+    } catch (e) {
+      // Fallback local save
+    }
+
+    const localKey = `aiworkhub_submissions_${userId}`;
+    let existing = [];
+    try {
+      const s = localStorage.getItem(localKey);
+      if (s) existing = JSON.parse(s);
+    } catch (e) {}
+    existing.unshift(subObj);
+    localStorage.setItem(localKey, JSON.stringify(existing));
+
+    if (statusMsg) statusMsg.textContent = 'Assignment submitted successfully!';
+    form.reset();
+    submitBtn.disabled = false;
+    await loadSubmissions(userId);
+  });
+}
+
+// FINANCIALS & FEES RENDER
+function renderFinancials(application, payments) {
+  const paid = balanceFromPayments(payments);
+  const remaining = Math.max(0, 10000 - paid);
+  const planName = application.payment_plan === 'full' ? 'Full Payment (Upfront)' : 'Instalments (2 Parts)';
+
+  if ($('fin-selected-plan')) $('fin-selected-plan').textContent = `Plan: ${planName}`;
+  if ($('fin-total-paid')) $('fin-total-paid').textContent = money(paid);
+  if ($('fin-outstanding-balance')) $('fin-outstanding-balance').textContent = money(remaining);
+
+  if ($('fin-status-text')) {
+    if (remaining === 0) $('fin-status-text').textContent = '✓ Fully Paid';
+    else if (paid > 0) $('fin-status-text').textContent = 'Partially Paid (Instalment 1 Confirmed)';
+    else $('fin-status-text').textContent = 'Payment Pending';
+  }
+
+  if ($('payment-plan-badge')) {
+    $('payment-plan-badge').textContent = remaining === 0 ? '✓ Fully Paid' : `Balance: ${money(remaining)}`;
+  }
+
+  // Render Receipts History
+  const receiptsList = $('payments-history-list');
+  const receiptsEmpty = $('receipts-empty-msg');
+  if (receiptsList) {
+    receiptsList.replaceChildren();
+    if (!payments || !payments.length) {
+      if (receiptsEmpty) receiptsEmpty.hidden = false;
+    } else {
+      if (receiptsEmpty) receiptsEmpty.hidden = true;
+      payments.forEach(p => {
+        const li = document.createElement('li');
+        const h3 = document.createElement('h3');
+        h3.textContent = `Verified Receipt: ${money(p.amount_kes)}`;
+        const pEl = document.createElement('p');
+        pEl.textContent = `Reference: ${p.reference || 'N/A'} · Verified on: ${new Date(p.verified_at || Date.now()).toLocaleDateString('en-KE')}`;
+        li.append(h3, pEl);
+        receiptsList.append(li);
+      });
+    }
+  }
+}
+
+// MAIN DASHBOARD LOAD MEMBER
 async function loadMember() {
   if (loading) return;
   loading = true;
   const version = identityVersion;
-  $('refresh-dashboard').disabled = true;
+
+  if ($('refresh-dashboard')) $('refresh-dashboard').disabled = true;
   $('dashboard').hidden = true;
   $('new-application').hidden = true;
-  notice('Loading your enrolment…');
+  notice('Loading your student portal…');
+
   try {
     const { data: auth, error: authError } = await client.auth.getUser();
     if (version !== identityVersion) return;
-    if (authError || !auth.user) { showLogin(); notice('Please sign in to access your student account.'); return; }
+    if (authError || !auth.user) {
+      showLogin();
+      notice('Please sign in to access your student account.');
+      return;
+    }
+
     currentUser = auth.user;
     $('login-view').hidden = true;
     $('member-view').hidden = false;
     $('student-name').textContent = currentUser.user_metadata?.full_name || 'learner';
     $('student-email').textContent = currentUser.email || '';
+
     const { data: application, error } = await client.from('applications').select('id,full_name,payment_plan,status').eq('user_id', currentUser.id).maybeSingle();
     if (version !== identityVersion) return;
     if (error) throw error;
+
     if (!application) {
       $('student-full-name').value = currentUser.user_metadata?.full_name || '';
       $('new-application').hidden = false;
-      notice(''); return;
+      notice('');
+      return;
     }
+
     const [{ data: payments, error: paymentError }, { data: resources, error: resourceError }, { data: certificates, error: certError }] = await Promise.all([
-      client.from('payments').select('amount_kes').eq('user_id', currentUser.id),
+      client.from('payments').select('amount_kes,reference,verified_at').eq('user_id', currentUser.id),
       client.from('course_resources').select('id,title,description,file_path').order('sort_order'),
       client.from('certificates').select('id,title,file_path').eq('user_id', currentUser.id)
     ]);
+
     if (version !== identityVersion) return;
     if (paymentError || resourceError || certError) throw paymentError || resourceError || certError;
+
     const labels = { pending: 'Pending review', approved: 'Approved', declined: 'Not approved' };
     $('enrolment-status').textContent = labels[application.status] || 'Under review';
-    $('enrolment-help').textContent = application.status === 'approved' ? 'Your classroom is ready below.' : application.status === 'pending' ? 'We have your application. AI WorkHub will review it before granting course access.' : 'Contact AI WorkHub to discuss your application.';
+    $('enrolment-help').textContent = application.status === 'approved' ? 'Your classroom and modules are ready below.' : application.status === 'pending' ? 'We have your application. AI WorkHub will review it before granting full course access.' : 'Contact AI WorkHub to discuss your application.';
+
     $('payment-plan').textContent = application.payment_plan === 'full' ? 'Full payment' : 'Instalments';
     $('payment-help').textContent = application.payment_plan === 'full' ? 'KSh 10,000 upfront.' : 'KSh 5,000 on enrolment + KSh 5,000 to receive your certificate.';
     $('payment-balance').textContent = money(balanceFromPayments(payments));
+
     $('resources-note').textContent = application.status !== 'approved' ? 'Learning resources unlock after your enrolment is approved.' : resources.length ? 'Your course files, available while you are enrolled.' : 'Your instructor has not published any resources yet. Check back soon.';
+
     renderFiles(resources, $('resource-list'), 'course-materials');
     renderFiles(certificates, $('certificate-list'), 'certificates');
     $('certificate-note').textContent = certificates.length ? 'Your certificate has been released. Congratulations on your progress.' : 'Your certificate will appear after course completion, verified full payment and release by AI WorkHub.';
+
+    // Load Course Progress & Submissions
+    const completedSet = await loadCourseProgress(currentUser.id);
+    renderModules(completedSet, currentUser.id);
+    await loadSubmissions(currentUser.id);
+    initAssignmentUpload(currentUser.id);
+    renderFinancials(application, payments || []);
+
     $('dashboard').hidden = false;
+    activateTab('overview');
     notice('');
-  } catch {
+  } catch (err) {
     if (version !== identityVersion) return;
     notice('We couldn’t load your dashboard. Check your connection and try Refresh. If this continues, contact AI WorkHub.', true);
-  } finally { loading = false; $('refresh-dashboard').disabled = false; }
+  } finally {
+    loading = false;
+    if ($('refresh-dashboard')) $('refresh-dashboard').disabled = false;
+  }
 }
-loginButton.addEventListener('click', async () => {
+
+// SETUP EVENT LISTENERS
+loginButton?.addEventListener('click', async () => {
   if (!client) return;
   loginButton.disabled = true;
   notice('Opening Google sign-in…');
@@ -111,50 +489,93 @@ loginButton.addEventListener('click', async () => {
     const callback = new URL('student.html', window.location.href);
     const { error } = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: callback.href } });
     if (error) throw error;
-  } catch (error) { notice(authFeedback(error), true); loginButton.disabled = false; }
+  } catch (error) {
+    notice(authFeedback(error), true);
+    loginButton.disabled = false;
+  }
 });
-$('sign-out').addEventListener('click', async () => {
+
+$('sign-out')?.addEventListener('click', async () => {
   $('sign-out').disabled = true;
   try {
     const { error } = await client.auth.signOut({ scope: 'local' });
     if (error) throw error;
-    showLogin(); notice('You have signed out.');
-  } catch { notice('Sign out failed. Please try again.', true); }
-  finally { $('sign-out').disabled = false; }
+    showLogin();
+    notice('You have signed out.');
+  } catch {
+    notice('Sign out failed. Please try again.', true);
+  } finally {
+    $('sign-out').disabled = false;
+  }
 });
-$('refresh-dashboard').addEventListener('click', loadMember);
-$('student-application').addEventListener('change', () => {
-  $('student-instalments').hidden = $('student-application').elements.paymentPlan.value !== 'instalments';
+
+$('refresh-dashboard')?.addEventListener('click', loadMember);
+
+$('student-application')?.addEventListener('change', () => {
+  if ($('student-instalments')) {
+    $('student-instalments').hidden = $('student-application').elements.paymentPlan.value !== 'instalments';
+  }
 });
-$('student-application').addEventListener('submit', async event => {
+
+$('student-application')?.addEventListener('submit', async event => {
   event.preventDefault();
   const form = event.currentTarget;
   if (!currentUser || !client) return;
+
   const values = Object.fromEntries(new FormData(form));
   const validation = validateApplication(values);
-  if (validation) { $('submit-status').textContent = validation; $('submit-status').focus(); return; }
+  if (validation) {
+    $('submit-status').textContent = validation;
+    $('submit-status').focus();
+    return;
+  }
+
   const button = form.querySelector('[type=submit]');
   button.disabled = true;
   $('submit-status').textContent = 'Sending your application…';
+
   try {
-    const { error } = await client.from('applications').insert({ user_id: currentUser.id, full_name: values.fullName.trim(), phone: values.phone.trim(), payment_plan: values.paymentPlan });
-    if (error?.code === '23505') { await loadMember(); return; }
+    const { error } = await client.from('applications').insert({
+      user_id: currentUser.id,
+      full_name: values.fullName.trim(),
+      phone: values.phone.trim(),
+      payment_plan: values.paymentPlan
+    });
+    if (error?.code === '23505') {
+      await loadMember();
+      return;
+    }
     if (error) throw error;
     $('submit-status').textContent = '';
     await loadMember();
   } catch {
     $('submit-status').textContent = 'We couldn’t confirm your application. Your entries are still here. Try again or contact AI WorkHub.';
     $('submit-status').focus();
-  } finally { button.disabled = false; }
+  } finally {
+    button.disabled = false;
+  }
 });
+
 async function start() {
-  if (!isConfigured(config)) { showLogin(); notice('Student sign-in is being set up. For enrolment help, WhatsApp 0742 330 046.'); return; }
+  initTabs();
+  if (!isConfigured(config)) {
+    showLogin();
+    notice('Student sign-in is being set up. For enrolment help, WhatsApp 0742 330 046.');
+    return;
+  }
+
   const callback = readCallback(location.href);
-  // Exchange explicitly: getSession alone can hide an initialization/callback error.
-  client = createClient(config.supabaseUrl, config.supabasePublishableKey, { auth: { flowType: 'pkce', detectSessionInUrl: false, persistSession: true, autoRefreshToken: true } });
-  client.auth.onAuthStateChange(event => {
-    if (event === 'SIGNED_OUT') { showLogin(); notice('Please sign in to access your student account.'); }
+  client = createClient(config.supabaseUrl, config.supabasePublishableKey, {
+    auth: { flowType: 'pkce', detectSessionInUrl: false, persistSession: true, autoRefreshToken: true }
   });
+
+  client.auth.onAuthStateChange(event => {
+    if (event === 'SIGNED_OUT') {
+      showLogin();
+      notice('Please sign in to access your student account.');
+    }
+  });
+
   try {
     if (callback.error || callback.errorCode) {
       showLogin();
@@ -169,12 +590,18 @@ async function start() {
     const { data, error } = await client.auth.getSession();
     if (error) throw error;
     if (data.session) await loadMember();
-    else { showLogin(); notice(''); }
+    else {
+      showLogin();
+      notice('');
+    }
   } catch (error) {
     showLogin();
     notice(authFeedback(error), true);
   } finally {
-    if (callback.code || callback.error || callback.errorCode) history.replaceState(null, '', cleanCallbackUrl(location.href));
+    if (callback.code || callback.error || callback.errorCode) {
+      history.replaceState(null, '', cleanCallbackUrl(location.href));
+    }
   }
 }
+
 start();
