@@ -209,7 +209,7 @@ function renderModules(completedSet, userId) {
   COURSE_MODULES.forEach((mod) => {
     const isCompleted = completedSet.has(mod.id);
     const card = document.createElement('div');
-    card.className = `module-card ${isCompleted ? 'completed' : 'in-progress'}`;
+    card.className = 'module-card';
 
     const top = document.createElement('div');
     top.className = 'module-top';
@@ -242,7 +242,7 @@ function renderModules(completedSet, userId) {
     const toggleBtn = document.createElement('button');
     toggleBtn.type = 'button';
     toggleBtn.className = 'portal-secondary toggle-module-btn';
-    toggleBtn.textContent = isCompleted ? '✓ Marked Completed' : 'Mark as Completed';
+    toggleBtn.textContent = isCompleted ? 'Completed ↗' : 'Mark as completed';
     toggleBtn.addEventListener('click', async () => {
       toggleBtn.disabled = true;
       const nextState = !completedSet.has(mod.id);
@@ -376,13 +376,13 @@ function renderFinancials(application, payments) {
   setElemText('fin-outstanding-balance', money(remaining));
 
   if ($('fin-status-text')) {
-    if (remaining === 0) $('fin-status-text').textContent = '✓ Fully Paid';
+    if (remaining === 0) $('fin-status-text').textContent = 'Fully Paid';
     else if (paid > 0) $('fin-status-text').textContent = 'Partially Paid (Instalment 1 Confirmed)';
     else $('fin-status-text').textContent = 'Payment Pending';
   }
 
   if ($('payment-plan-badge')) {
-    $('payment-plan-badge').textContent = remaining === 0 ? '✓ Fully Paid' : `Balance: ${money(remaining)}`;
+    $('payment-plan-badge').textContent = remaining === 0 ? 'Fully Paid' : `Balance: ${money(remaining)}`;
   }
 
   // Render Receipts History
