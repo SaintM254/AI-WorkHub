@@ -361,7 +361,7 @@ function initAssignmentUpload(userId) {
 function renderFinancials(application, payments) {
   const paid = balanceFromPayments(payments || []);
   const remaining = Math.max(0, 10000 - paid);
-  const planName = application.payment_plan === 'full' ? 'Full Payment (Upfront)' : 'Instalments (2 Parts)';
+  const planName = (application && application.payment_plan === 'full') ? 'Full Payment (Upfront)' : 'Instalments (2 Parts)';
 
   if ($('fin-selected-plan')) $('fin-selected-plan').textContent = `Plan: ${planName}`;
   if ($('fin-total-paid')) $('fin-total-paid').textContent = money(paid);
@@ -425,14 +425,21 @@ async function loadMember() {
     $('student-name').textContent = currentUser.user_metadata?.full_name || 'learner';
     $('student-email').textContent = currentUser.email || '';
 
-    const { data: application, error: appError } = await client.from('applications').select('id,full_name,payment_plan,status').eq('user_id', currentUser.id).maybeSingle();
+    // Safely query applications without crashing if table is not created yet
+    let application = null;
+    try {
+      const { data, error: appError } = await client.from('applications').select('id,full_name,payment_plan,status').eq('user_id', currentUser.id).maybeSingle();
+      if (!appError) application = data;
+    } catch (e) {
+      console.warn('Applications table fetch notice:', e);
+    }
+
     if (version !== identityVersion) return;
-    if (appError) throw appError;
 
     if (!application) {
-      $('student-full-name').value = currentUser.user_metadata?.full_name || '';
+      $('student-full-name').value = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || '';
       $('new-application').hidden = false;
-      notice('');
+      notice('Signed in as ' + (currentUser.email || 'learner') + '. Complete your registration below to get started.');
       return;
     }
 
