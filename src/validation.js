@@ -18,3 +18,15 @@ export function isConfigured(config) {
 export function balanceFromPayments(payments) {
   return Math.max(0, 10000 - payments.reduce((sum, item) => sum + Number(item.amount_kes), 0));
 }
+
+export function paymentTotals(payments) {
+  const paid=payments.reduce((sum,row)=>sum+Number(row.amount_kes),0);
+  return {paid,remaining:Math.max(0,10000-paid)};
+}
+export function validateUpload(file,notes='') {
+  if(!file) return 'Choose a file first.';
+  if(!file.size || file.size>10*1024*1024) return 'Choose a non-empty file of at most 10 MB.';
+  if(file.name.length>250 || !/\.(pdf|zip|docx?|txt|png|jpe?g)$/i.test(file.name)) return 'Use a PDF, ZIP, Word, text, PNG or JPEG file.';
+  if(notes.length>4000) return 'Keep notes under 4,000 characters.';
+  return '';
+}

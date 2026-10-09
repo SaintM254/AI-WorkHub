@@ -34,7 +34,7 @@ jobs:
       - name: Prepare public files
         run: |
           mkdir _site
-          cp index.html student.html privacy.html styles.css portal.css script.js portal-config.js _site/
+          cp index.html student.html admin.html privacy.html styles.css portal.css admin.css script.js portal-config.js _site/
           cp -R dist _site/dist
           cp -R assets _site/assets
       - name: Upload website

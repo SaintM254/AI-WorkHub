@@ -1,3 +1,5 @@
+> **Admissions update:** For the current admin portal, database fixes, admission numbers and email setup, follow [ADMIN_SETUP.md](ADMIN_SETUP.md). The guide below also explains the original Google/Supabase connection.
+
 # Google sign-in and student portal — setup guide
 
 The code is ready to connect, but sign-in will not work until **you complete this setup**. No Supabase or Google project has been created by the agent. You can keep the site on GitHub Pages and the current branch; no merge is required.
@@ -61,7 +63,7 @@ These two values are public configuration, not administrative credentials. Secur
 
 ## 5. How to operate the first version
 
-This release includes a **student dashboard**, not a custom admin dashboard. Initially, manage the institution through your private Supabase dashboard:
+This release includes student and admin dashboards. Activate the admin dashboard using ADMIN_SETUP.md. Alternatively, trusted operators can manage records through the Supabase dashboard:
 
 ### Review an application
 

@@ -8,13 +8,13 @@
   <title>Student Portal — AI WorkHub</title>
   <link rel="icon" href="assets/favicon.svg?v=2">
   <link rel="stylesheet" href="styles.css?v=20261008-menu-large-left">
-  <link rel="stylesheet" href="portal.css?v=3">
+  <link rel="stylesheet" href="portal.css?v=admissions1-3">
 </head>
 <body class="portal-page">
 <header class="portal-header">
   <a href="index.html" aria-label="AI WorkHub home"><img src="assets/logo-horizontal.svg" width="240" height="46" alt="AI WorkHub"></a>
   <a href="index.html" class="text-link portal-back-link">← Back to website</a>
-  <button class="portal-menu-toggle" aria-expanded="false" aria-label="Open navigation" aria-controls="portal-mobile-nav" type="button">
+  <button class="portal-menu-toggle" hidden aria-expanded="false" aria-label="Open navigation" aria-controls="portal-mobile-nav" type="button">
     <span></span><span></span><span></span>
   </button>
 </header>
@@ -63,7 +63,7 @@
       <div>
         <span class="eyebrow">STUDENT PORTAL</span>
         <h1 id="member-title">Welcome, <em id="student-name">learner</em>.</h1>
-        <p id="student-email"></p>
+        <p id="student-email"></p><p id="student-admission"></p>
       </div>
       <div class="member-actions">
         <button class="portal-secondary" id="refresh-dashboard" type="button">Refresh</button>
@@ -206,10 +206,7 @@
               <div class="form-field">
                 <label for="assignment-select">Select Assignment</label>
                 <select id="assignment-select" required>
-                  <option value="m1_prompt_engineering">Module 1: Prompt Engineering & Tool Matrix</option>
-                  <option value="m2_automation_workflow">Module 2: Zapier/Make Automation Workflow</option>
-                  <option value="m3_content_strategy">Module 3: Generative AI Marketing Strategy</option>
-                  <option value="capstone_project">Module 4: Applied AI Capstone Project</option>
+                  <option value="">Loading assignments…</option>
                 </select>
               </div>
 
@@ -222,7 +219,7 @@
 
               <div class="form-field">
                 <label for="assignment-notes">Notes / Comments for Instructor (Optional)</label>
-                <textarea id="assignment-notes" rows="3" placeholder="Add any details or links to your live automation..."></textarea>
+                <textarea id="assignment-notes" rows="3" maxlength="4000" placeholder="Add any details or links to your live automation..."></textarea>
               </div>
 
               <button class="button" type="submit" id="submit-assignment-btn">Upload &amp; Submit Assignment ↗</button>
@@ -263,12 +260,12 @@
           <section class="portal-card">
             <span class="eyebrow">HOW TO PAY</span>
             <h2>M-Pesa Payment Instructions</h2>
-            <p>Make your tuition payment via M-Pesa using the details below. Payments are reviewed and verified within 2 hours.</p>
+            <p>Make your tuition payment via M-Pesa using the details below. Contact AI WorkHub to confirm the correct payment instructions before sending money. Only verified payments appear in your balance.</p>
             
             <div class="mpesa-instructions-card">
               <div class="mpesa-row">
                 <span>Method:</span>
-                <strong>M-Pesa Buy Goods / Till / Paybill</strong>
+                <strong>Confirm via WhatsApp</strong>
               </div>
               <div class="mpesa-row">
                 <span>Phone / Contact:</span>
@@ -276,7 +273,7 @@
               </div>
               <div class="mpesa-row">
                 <span>Account Name:</span>
-                <strong>AI WorkHub Tuition</strong>
+                <strong>Confirm recipient before paying</strong>
               </div>
             </div>
 
@@ -296,7 +293,7 @@
       </div>
 
       <!-- TAB 5: RESOURCES & CERTIFICATE -->
-      <div id="tab-resources" class="portal-tab-content" hidden>
+      <div id="tab-resources" class="portal-tab-content" hidden><section class="portal-card"><span class="eyebrow">YOUR ADMISSION</span><h2>Admission letter</h2><p>Your A4 letter appears here when the admissions team issues it.</p><ul id="admission-letter-list" class="resource-list"></ul></section>
         <div class="dashboard-columns">
           <section class="portal-card">
             <span class="eyebrow">YOUR CLASSROOM</span>
@@ -325,6 +322,6 @@
   AI WorkHub · Learn today. Shape tomorrow. <a href="privacy.html">Privacy</a>
 </footer>
 <script src="portal-config.js?v=3"></script>
-<script type="module" src="dist/portal.js?v=7"></script>
+<script type="module" src="dist/portal.js?v=admissions1"></script>
 </body>
 </html>

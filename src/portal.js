@@ -1,6 +1,6 @@
 import { readCallback, authFeedback, cleanCallbackUrl } from './auth-feedback.js';
 import { createClient } from '@supabase/supabase-js';
-import { validateApplication, isConfigured, balanceFromPayments } from './validation.js';
+import { validateApplication, isConfigured, balanceFromPayments, paymentTotals, validateUpload } from './validation.js';
 
 const $ = id => document.getElementById(id);
 const setElemText = (id, text) => {
@@ -15,6 +15,8 @@ let client;
 let currentUser;
 let loading = false;
 let identityVersion = 0;
+let currentApplication = null;
+let assignmentOptions = [];
 
 const money = amount => `KSh ${Number(amount).toLocaleString('en-KE')}`;
 
@@ -95,6 +97,7 @@ function initPortalMobileNav() {
     toggle.setAttribute('aria-expanded', 'true');
     toggle.setAttribute('aria-label', 'Close navigation');
     document.body.classList.add('portal-menu-open');
+    document.querySelector('main').inert=true;
     closeBtn && closeBtn.focus();
   }
 
@@ -104,9 +107,11 @@ function initPortalMobileNav() {
     toggle.setAttribute('aria-expanded', 'false');
     toggle.setAttribute('aria-label', 'Open navigation');
     document.body.classList.remove('portal-menu-open');
+    document.querySelector('main').inert=false;
     if (restoreFocus && wasOpen) toggle.focus();
   }
 
+  window.matchMedia('(max-width:800px)').addEventListener('change',()=>closePortalMenu(true));
   toggle.addEventListener('click', () => {
     if (nav.classList.contains('open')) closePortalMenu(true);
     else openPortalMenu();
@@ -127,7 +132,7 @@ function initPortalMobileNav() {
     if (!nav.classList.contains('open')) return;
     if (event.key === 'Escape') { event.preventDefault(); closePortalMenu(true); }
     if (event.key === 'Tab') {
-      const items = [toggle, ...(closeBtn ? [closeBtn] : []), ...nav.querySelectorAll('.portal-mobile-tab')];
+      const items = [toggle, ...nav.querySelectorAll('button, a')];
       const first = items[0], last = items[items.length - 1];
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
@@ -140,6 +145,14 @@ function initPortalMobileNav() {
 function showLogin() {
   identityVersion += 1;
   currentUser = null;
+  currentApplication = null;
+  assignmentOptions = [];
+  for (const id of ['modules-list','submissions-list','payments-history-list','admission-letter-list']) $(id)?.replaceChildren();
+  if ($('assignment-upload-form')) $('assignment-upload-form').reset();
+  document.querySelector('.portal-menu-toggle')?.setAttribute('hidden', '');
+  document.getElementById('portal-mobile-nav')?.classList.remove('open');
+  document.body.classList.remove('portal-menu-open');
+  document.querySelector('main').inert=false;
   if ($('member-view')) $('member-view').hidden = true;
   if ($('dashboard')) $('dashboard').hidden = true;
   if ($('new-application')) $('new-application').hidden = true;
@@ -197,53 +210,14 @@ function renderFiles(items, container, bucket) {
 
 // COURSE PROGRESS MANAGEMENT
 async function loadCourseProgress(userId) {
-  let completedSet = new Set();
-  const localKey = `aiworkhub_progress_${userId}`;
-  const savedLocal = localStorage.getItem(localKey);
-  if (savedLocal) {
-    try { JSON.parse(savedLocal).forEach(id => completedSet.add(id)); } catch (e) {}
-  }
-
-  try {
-    const { data, error } = await client.from('course_progress').select('module_id,completed').eq('user_id', userId);
-    if (!error && data) {
-      data.forEach(item => {
-        if (item.completed) completedSet.add(item.module_id);
-        else completedSet.delete(item.module_id);
-      });
-    }
-  } catch (e) {
-    // Ignore if table not created yet
-  }
-
-  return completedSet;
+  const {data,error}=await client.from('course_progress').select('module_id,completed').eq('user_id',userId);
+  if(error) throw error;
+  return new Set((data || []).filter(x=>x.completed && COURSE_MODULES.some(m=>m.id===x.module_id)).map(x=>x.module_id));
 }
-
-async function saveModuleToggle(userId, moduleId, completed) {
-  const localKey = `aiworkhub_progress_${userId}`;
-  let currentSet = new Set();
-  try {
-    const saved = localStorage.getItem(localKey);
-    if (saved) JSON.parse(saved).forEach(id => currentSet.add(id));
-  } catch (e) {}
-
-  if (completed) currentSet.add(moduleId);
-  else currentSet.delete(moduleId);
-
-  localStorage.setItem(localKey, JSON.stringify(Array.from(currentSet)));
-
-  try {
-    await client.from('course_progress').upsert({
-      user_id: userId,
-      module_id: moduleId,
-      completed: completed,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id,module_id' });
-  } catch (e) {
-    // Graceful fallback to local state
-  }
+async function saveModuleToggle(userId,moduleId,completed) {
+  const {error}=await client.from('course_progress').upsert({user_id:userId,module_id:moduleId,completed},{onConflict:'user_id,module_id'});
+  if(error) throw error;
 }
-
 function renderModules(completedSet, userId) {
   const container = $('modules-list');
   if (!container) return;
@@ -299,12 +273,17 @@ function renderModules(completedSet, userId) {
     toggleBtn.addEventListener('click', async () => {
       toggleBtn.disabled = true;
       const nextState = !completedSet.has(mod.id);
-      if (nextState) completedSet.add(mod.id);
-      else completedSet.delete(mod.id);
-      await saveModuleToggle(userId, mod.id, nextState);
-      renderModules(completedSet, userId);
+      const version=identityVersion;
+      try {
+        await saveModuleToggle(userId, mod.id, nextState);
+        if(version!==identityVersion) return;
+        if (nextState) completedSet.add(mod.id); else completedSet.delete(mod.id);
+        renderModules(completedSet, userId);
+      } catch { notice('Progress could not be saved. Please try again; no completion change was recorded.',true); }
+      finally { toggleBtn.disabled=false; }
     });
 
+    toggleBtn.disabled=currentApplication?.status!=='approved';
     actionRow.append(document.createElement('span'), toggleBtn);
 
     card.append(top, topicUl, actionRow);
@@ -314,114 +293,69 @@ function renderModules(completedSet, userId) {
 
 // ASSIGNMENTS MANAGEMENT
 async function loadSubmissions(userId) {
-  const container = $('submissions-list');
-  const emptyMsg = $('submissions-empty-msg');
-  if (!container) return;
-
-  let submissions = [];
-  try {
-    const { data, error } = await client.from('assignment_submissions').select('id,file_name,notes,status,submitted_at').eq('user_id', userId).order('submitted_at', { ascending: false });
-    if (!error && data) submissions = data;
-  } catch (e) {}
-
-  const localKey = `aiworkhub_submissions_${userId}`;
-  const localSaved = localStorage.getItem(localKey);
-  if (localSaved) {
-    try {
-      const localSubs = JSON.parse(localSaved);
-      localSubs.forEach(ls => {
-        if (!submissions.some(s => s.id === ls.id)) submissions.push(ls);
-      });
-    } catch (e) {}
+  const version=identityVersion;
+  const {data,error}=await client.from('assignment_submissions').select('id,file_name,notes,status,submitted_at').eq('user_id',userId).order('submitted_at',{ascending:false});
+  if(error) throw error;
+  if(version!==identityVersion) return;
+  const container=$('submissions-list'); container.replaceChildren();
+  $('submissions-empty-msg').hidden=!!data.length;
+  $('submissions-empty-msg').textContent='No assignments uploaded yet.';
+  for(const sub of data){
+    const li=document.createElement('li'),h=document.createElement('h3'),p=document.createElement('p');
+    h.textContent=sub.file_name;
+    p.textContent=`Submitted: ${new Date(sub.submitted_at).toLocaleDateString('en-KE')} · Status: ${sub.status}${sub.notes?' · '+sub.notes:''}`;
+    li.append(h,p);container.append(li);
   }
-
-  container.replaceChildren();
-  if (!submissions.length) {
-    if (emptyMsg) emptyMsg.hidden = false;
-    return;
-  }
-
-  if (emptyMsg) emptyMsg.hidden = true;
-
-  submissions.forEach(sub => {
-    const li = document.createElement('li');
-    const h3 = document.createElement('h3');
-    h3.textContent = sub.file_name || 'Assignment Upload';
-    const p = document.createElement('p');
-    p.textContent = `Submitted: ${new Date(sub.submitted_at || Date.now()).toLocaleDateString('en-KE')} · Status: ${sub.status || 'Submitted'}${sub.notes ? ' · Note: ' + sub.notes : ''}`;
-    li.append(h3, p);
-    container.append(li);
-  });
 }
-
-function initAssignmentUpload(userId) {
-  const form = $('assignment-upload-form');
-  if (!form) return;
-
-  form.addEventListener('submit', async event => {
+async function loadAssignments() {
+  const version=identityVersion;
+  const {data,error}=await client.from('assignments').select('id,title').order('sort_order');
+  if(error) throw error;
+  if(version!==identityVersion) return;
+  assignmentOptions=data||[];
+  const select=$('assignment-select');select.replaceChildren();
+  for(const item of assignmentOptions){const opt=document.createElement('option');opt.value=item.id;opt.textContent=item.title;select.append(opt);}
+  const enabled=currentApplication?.status==='approved' && assignmentOptions.length>0;
+  $('submit-assignment-btn').disabled=!enabled;
+  $('assignment-file').disabled=!enabled;
+  select.disabled=!enabled;
+  $('upload-status-msg').textContent=enabled?'':currentApplication?.status==='approved'?'No assignments published yet.':'Assignments unlock after admission approval.';
+}
+function initAssignmentUpload() {
+  // Register once, using the current authenticated identity on every submission.
+  $('assignment-upload-form')?.addEventListener('submit',async event=>{
     event.preventDefault();
-    const statusMsg = $('upload-status-msg');
-    const submitBtn = $('submit-assignment-btn');
-
-    const fileInput = $('assignment-file');
-    const select = $('assignment-select');
-    const notesInput = $('assignment-notes');
-
-    if (!fileInput || !fileInput.files.length) {
-      if (statusMsg) statusMsg.textContent = 'Please choose a file to upload.';
-      return;
-    }
-
-    const file = fileInput.files[0];
-    if (submitBtn) submitBtn.disabled = true;
-    if (statusMsg) statusMsg.textContent = 'Uploading assignment…';
-
-    const subObj = {
-      id: 'sub_' + Date.now(),
-      assignment_id: select.value,
-      user_id: userId,
-      file_name: `${select.options[select.selectedIndex].text} - ${file.name}`,
-      notes: notesInput ? notesInput.value.trim() : '',
-      status: 'submitted',
-      submitted_at: new Date().toISOString()
-    };
-
+    const form=event.currentTarget,button=$('submit-assignment-btn'),status=$('upload-status-msg');
+    if(button.disabled || !currentUser || currentApplication?.status!=='approved') return;
+    const file=$('assignment-file').files[0],assignmentId=$('assignment-select').value,notes=$('assignment-notes').value.trim();
+    const problem=validateUpload(file,notes);
+    if(problem){status.textContent=problem;return;}
+    if(!assignmentOptions.some(a=>a.id===assignmentId)){status.textContent='Choose a published assignment.';return;}
+    const version=identityVersion,userId=currentUser.id;
+    const extension=file.name.split('.').pop().toLowerCase();
+    const path=`${userId}/${crypto.randomUUID()}.${extension}`;
+    button.disabled=true;status.textContent='Uploading assignment…';
+    let uploaded=false,recorded=false;
     try {
-      const path = `${userId}/${Date.now()}_${file.name}`;
-      await client.storage.from('assignments').upload(path, file);
-      subObj.file_path = path;
-
-      await client.from('assignment_submissions').insert({
-        assignment_id: select.value,
-        user_id: userId,
-        file_name: subObj.file_name,
-        file_path: path,
-        notes: subObj.notes
-      });
-    } catch (e) {
-      // Fallback local save
-    }
-
-    const localKey = `aiworkhub_submissions_${userId}`;
-    let existing = [];
-    try {
-      const s = localStorage.getItem(localKey);
-      if (s) existing = JSON.parse(s);
-    } catch (e) {}
-    existing.unshift(subObj);
-    localStorage.setItem(localKey, JSON.stringify(existing));
-
-    if (statusMsg) statusMsg.textContent = 'Assignment submitted successfully!';
-    form.reset();
-    if (submitBtn) submitBtn.disabled = false;
-    await loadSubmissions(userId);
+      const {error:uploadError}=await client.storage.from('assignments').upload(path,file,{contentType:file.type || 'application/octet-stream',upsert:false});
+      if(uploadError) throw uploadError;
+      uploaded=true;
+      const {error}=await client.from('assignment_submissions').insert({assignment_id:assignmentId,user_id:userId,file_name:file.name,file_path:path,notes});
+      if(error) throw error;
+      recorded=true;
+      if(version!==identityVersion) return;
+      form.reset();status.textContent='Assignment submitted successfully.';
+      try {await loadSubmissions(userId);} catch {status.textContent='Assignment saved, but history could not refresh. Use Refresh to try again.';}
+    } catch {
+      if(uploaded&&!recorded) await client.storage.from('assignments').remove([path]).catch(()=>{});
+      if(version===identityVersion) status.textContent='Submission could not be confirmed. Your file selection is preserved. Refresh your history before retrying.';
+    } finally {if(version===identityVersion) button.disabled=false;}
   });
 }
 
 // FINANCIALS & FEES RENDER
 function renderFinancials(application, payments) {
-  const paid = balanceFromPayments(payments || []);
-  const remaining = Math.max(0, 10000 - paid);
+  const {paid,remaining} = paymentTotals(payments || []);
   const planName = (application && application.payment_plan === 'full') ? 'Full Payment (Upfront)' : 'Instalments (2 Parts)';
 
   setElemText('fin-selected-plan', `Plan: ${planName}`);
@@ -430,7 +364,7 @@ function renderFinancials(application, payments) {
 
   if ($('fin-status-text')) {
     if (remaining === 0) $('fin-status-text').textContent = 'Fully Paid';
-    else if (paid > 0) $('fin-status-text').textContent = 'Partially Paid (Instalment 1 Confirmed)';
+    else if (paid > 0) $('fin-status-text').textContent = 'Partially Paid';
     else $('fin-status-text').textContent = 'Payment Pending';
   }
 
@@ -490,13 +424,17 @@ async function loadMember() {
     let application = null;
     try {
       const { data, error: appError } = await client.from('applications').select('id,full_name,payment_plan,status').eq('user_id', currentUser.id).maybeSingle();
-      if (!appError) application = data;
+      if(appError) throw appError;
+      application = data;
     } catch (e) {
-      console.warn('Applications table fetch notice:', e);
+      throw e;
     }
 
     if (version !== identityVersion) return;
 
+    currentApplication=application;
+    document.querySelector('.portal-menu-toggle')?.toggleAttribute('hidden',!application);
+    setElemText('student-admission', application?.admission_no ? `Admission no. ${application.admission_no}` : '');
     if (!application) {
       if ($('student-full-name')) $('student-full-name').value = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || '';
       if ($('new-application')) $('new-application').hidden = false;
@@ -504,19 +442,25 @@ async function loadMember() {
       return;
     }
 
-    // Safely query core tables without failing if optional columns are missing
-    const [paymentsRes, resourcesRes, certsRes] = await Promise.allSettled([
-      client.from('payments').select('amount_kes').eq('user_id', currentUser.id),
+    const results=await Promise.all([
+      client.from('payments').select('amount_kes,reference,verified_at').eq('user_id',currentUser.id),
       client.from('course_resources').select('id,title,description,file_path').order('sort_order'),
-      client.from('certificates').select('id,title,file_path').eq('user_id', currentUser.id)
+      client.from('certificates').select('id,title,file_path').eq('user_id',currentUser.id),
+      client.from('admission_letters').select('id,file_path,created_at').eq('user_id',currentUser.id).order('created_at',{ascending:false}),
+      client.from('applications').select('admission_no').eq('id',application.id).single()
     ]);
-
-    if (version !== identityVersion) return;
-
-    const payments = (paymentsRes.status === 'fulfilled' && !paymentsRes.value.error && paymentsRes.value.data) ? paymentsRes.value.data : [];
-    const resources = (resourcesRes.status === 'fulfilled' && !resourcesRes.value.error && resourcesRes.value.data) ? resourcesRes.value.data : [];
-    const certificates = (certsRes.status === 'fulfilled' && !certsRes.value.error && certsRes.value.data) ? certsRes.value.data : [];
-
+    if(version!==identityVersion) return;
+    if(results.slice(0,3).some(r=>r.error)) throw results.slice(0,3).find(r=>r.error).error;
+    const warnings=[];
+    // Keep existing student records usable while the owner installs the new schema.
+    const migrationErrors=['42703','42P01','PGRST204','PGRST205'];
+    for(const result of results.slice(3)) {
+      if(result.error && !migrationErrors.includes(result.error.code)) throw result.error;
+    }
+    if(results.slice(3).some(r=>r.error)) warnings.push('Admission letters are awaiting a database update by AI WorkHub.');
+    const [payments,resources,certificates,letters]=results.slice(0,4).map(r=>r.data||[]);
+    setElemText('student-admission',results[4].data?.admission_no?`Admission no. ${results[4].data.admission_no}`:'');
+    renderFiles(letters.map((l,i)=>({...l,title:`Admission letter${i===0?' (latest)':''}`})), $('admission-letter-list'),'admission-letters');
     const labels = { pending: 'Pending review', approved: 'Approved', declined: 'Not approved' };
     setElemText('enrolment-status', labels[application.status] || 'Under review');
     setElemText('enrolment-help', application.status === 'approved' ? 'Your classroom and modules are ready below.' : application.status === 'pending' ? 'We have your application. AI WorkHub will review it before granting full course access.' : 'Contact AI WorkHub to discuss your application.');
@@ -531,30 +475,31 @@ async function loadMember() {
     renderFiles(certificates, $('certificate-list'), 'certificates');
     setElemText('certificate-note', certificates.length ? 'Your certificate has been released. Congratulations on your progress.' : 'Your certificate will appear after course completion, verified full payment and release by AI WorkHub.');
 
-    // Load New Features Safely (Progress, Submissions, Financials)
     try {
-      const completedSet = await loadCourseProgress(currentUser.id);
-      renderModules(completedSet, currentUser.id);
-    } catch (e) {
-      console.warn('Course progress load warning:', e);
+      const completedSet=await loadCourseProgress(currentUser.id);
+      if(version!==identityVersion) return;
+      renderModules(completedSet,currentUser.id);
+    } catch {
+      $('modules-list').replaceChildren();
+      for(const id of ['overview-progress-text','progress-percentage-large'])setElemText(id,'Unavailable');
+      setElemText('overview-progress-sub','Progress could not be loaded.');
+      for(const id of ['overview-progress-bar','main-progress-bar-fill'])if($(id))$(id).style.width='0%';
+      warnings.push('Course progress could not be loaded.');
     }
-
-    try {
-      await loadSubmissions(currentUser.id);
-      initAssignmentUpload(currentUser.id);
-    } catch (e) {
-      console.warn('Submissions load warning:', e);
+    if(version!==identityVersion) return;
+    try {await loadSubmissions(currentUser.id);} catch {
+      $('submissions-list').replaceChildren();$('submissions-empty-msg').hidden=false;
+      $('submissions-empty-msg').textContent='Submission history could not be loaded.';
+      warnings.push('Submission history could not be loaded.');
     }
-
-    try {
-      renderFinancials(application, payments);
-    } catch (e) {
-      console.warn('Financials render warning:', e);
-    }
-
+    if(version!==identityVersion) return;
+    $('submit-assignment-btn').disabled=true;
+    try {await loadAssignments();} catch {warnings.push('Assignments are unavailable until database setup or connectivity is restored.');}
+    if(version!==identityVersion) return;
+    renderFinancials(application,payments);
     if ($('dashboard')) $('dashboard').hidden = false;
     activateTab('overview');
-    notice('');
+    notice(warnings.join(' '),warnings.length>0);
   } catch (err) {
     console.error('loadMember Error:', err);
     if (version !== identityVersion) return;
@@ -644,6 +589,7 @@ $('student-application')?.addEventListener('submit', async event => {
 
 async function start() {
   initTabs();
+  initAssignmentUpload();
   initPortalMobileNav();
   if (!isConfigured(config)) {
     showLogin();

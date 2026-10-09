@@ -62,7 +62,7 @@ document.querySelectorAll('[data-enrol]').forEach(button => button.addEventListe
   const cfg = window.AI_WORKHUB_CONFIG;
   if (!cfg || !cfg.supabaseUrl || !cfg.supabasePublishableKey) return;
   try {
-    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    const { createClient } = await import('./dist/home-auth.js');
     const sb = createClient(cfg.supabaseUrl, cfg.supabasePublishableKey, {
       auth: { flowType: 'pkce', detectSessionInUrl: false, persistSession: true, autoRefreshToken: true }
     });

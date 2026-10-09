@@ -1,0 +1,4 @@
+# This function performs its own getUser(token) verification and admin allowlist check.
+# Required for projects using current publishable keys / JWT signing keys.
+[functions.send-admission-letter]
+verify_jwt = false
