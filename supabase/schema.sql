@@ -86,7 +86,6 @@ grant select on public.applications, public.payments, public.course_resources, p
 -- Explicit column grants: students cannot set approval, timestamps or IDs.
 grant insert (user_id,full_name,phone,payment_plan) on public.applications to authenticated;
 grant insert (user_id,module_id,completed) on public.course_progress to authenticated;
-grant update (completed) on public.course_progress to authenticated;
 grant insert (assignment_id,user_id,file_name,file_path,notes) on public.assignment_submissions to authenticated;
 
 drop policy if exists application_owner_read on public.applications;
@@ -117,9 +116,6 @@ create policy progress_owner_read on public.course_progress for select to authen
 drop policy if exists progress_owner_insert on public.course_progress;
 create policy progress_owner_insert on public.course_progress for insert to authenticated with check ((select auth.uid()) = user_id);
 
-drop policy if exists progress_owner_update on public.course_progress;
-create policy progress_owner_update on public.course_progress for update to authenticated using ((select auth.uid()) = user_id);
-
 -- Assignments & Submissions Policies
 drop policy if exists published_assignments on public.assignments;
 create policy published_assignments on public.assignments for select to authenticated using (published);
@@ -149,10 +145,10 @@ create policy student_certificate_files on storage.objects for select to authent
 
 drop policy if exists student_assignment_upload on storage.objects;
 create policy student_assignment_upload on storage.objects for insert to authenticated with check (
-  bucket_id = 'assignments' and owner = (select auth.uid())
+  bucket_id = 'assignments'
 );
 
 drop policy if exists student_assignment_read on storage.objects;
 create policy student_assignment_read on storage.objects for select to authenticated using (
-  bucket_id = 'assignments' and owner = (select auth.uid())
+  bucket_id = 'assignments' and exists (select 1 from public.assignment_submissions s where s.file_path = name and s.user_id = (select auth.uid()))
 );
