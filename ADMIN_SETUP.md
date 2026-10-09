@@ -1,3 +1,5 @@
+> **Email update:** [EMAIL_SETUP.md](EMAIL_SETUP.md) covers the second student login option and shared mail-provider configuration. The admin letter form now defaults to emailing immediately after the PDF is saved; uncheck its automatic-email option to inspect the PDF first.
+
 # Activate admissions, administrator access and admission-letter email
 
 The code is implemented, but **GitHub deployment does not update your Supabase database or install the email function**. Complete these steps before accepting submissions through the updated portal. Do not supply passwords or API secrets in chat.
@@ -10,7 +12,7 @@ The code is implemented, but **GitHub deployment does not update your Supabase d
 - Approving a student assigns `AIWH/ESS/0001/2026`-style admission numbers **in the database**, not in JavaScript. Numbering starts at 0001 each year (Africa/Nairobi time) and is not reused if admission is revoked. Repeat approval retains the same number. Concurrent approvals use a locked yearly counter. Previously approved students without a number can be approved once through the new admin page to assign one.
 - Admins can record verified payments; choosing a payment plan never counts as payment.
 - A4 PDFs use `assets/AI WorkHub Admission Letter.html` as the template, your logo, and administrator-entered cohort/signatory details. Dates, emails and admission numbers are filled automatically. The full content is fitted to one A4 page (210 × 297 mm); long content scales down. The PDF is image-rendered, not a digitally signed or searchable-text document.
-- PDFs are uploaded to a private bucket and are visible to the assigned student while approved. Email is a separate, explicit admin action after reviewing the PDF.
+- PDFs are uploaded to a private bucket and are visible to the assigned student while approved. Email can run automatically as part of the administrator's generate/save action, or manually after review when the automatic-email checkbox is cleared.
 
 ## 1. Update your existing Supabase database
 
@@ -82,11 +84,11 @@ You can also decline or return an admission to pending. This blocks new student 
 
 1. Select an approved student with an admission number.
 2. Under **Issue an admission letter**, enter the actual intake, start date, delivery mode, acceptance deadline, orientation date/time/timezone, authorised signatory and role.
-3. Click **Generate & save A4 PDF**.
+3. Choose whether to leave **Email the letter automatically after saving** checked, then click the generate/save button.
 4. The letter is generated in your browser, saved privately in Supabase, registered against the student and downloaded. A failed save does not show a success message.
 5. Open the PDF and check all details. The student's Google email and admission number are filled from verified records.
 6. Use **Open PDF** under **Issued letters** to review an existing copy. The student can also find it under **Resources & Certs → Admission letter** while approved.
-7. **Email letter** is a separate step. It does not send until the server-side email service below has been configured.
+7. **Email letter** remains available for manual sending when automatic email is disabled or fails. Neither sends until the server-side email service below has been configured.
 
 ## 6. Configure email delivery (server-side only)
 

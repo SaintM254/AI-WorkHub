@@ -1,6 +1,8 @@
+> **Email login update:** See [EMAIL_SETUP.md](EMAIL_SETUP.md) for email/password signup, verification, reset links, free-tier Resend SMTP, and automatic admission-letter emailing. Your existing database schema does not need another migration for this update.
+
 # AI WorkHub
 
-A responsive, academic-style website for a Kenyan AI education institution. The public website uses plain HTML, CSS and JavaScript. The Google-first student portal bundles Supabase JS using a small esbuild build step; the output is still static and hosted on GitHub Pages. No external fonts are required.
+A responsive, academic-style website for a Kenyan AI education institution. The public website uses plain HTML, CSS and JavaScript. The Google and email student portal bundles Supabase JS using a small esbuild build step; the output is still static and hosted on GitHub Pages. No external fonts are required.
 
 ## Programme
 
@@ -8,7 +10,7 @@ A responsive, academic-style website for a Kenyan AI education institution. The 
 - Fee: **KSh 10,000**
 - Working programme name: AI Essentials & Automation
 
-**Google-first student portal:** `student.html` provides login, applications, enrolment status, verified payment balance, private learning files and certificate access. It is not live-connected yet: `portal-config.js` has empty public settings, and Supabase/Google must be configured by the owner. Follow **[SUPABASE_SETUP.md](SUPABASE_SETUP.md)** for every setup button, redirect URL, SQL step and security check.
+**Google + email student portal:** `student.html` provides login, applications, enrolment status, verified payment balance, private learning files and certificate access. It is not live-connected yet: `portal-config.js` has empty public settings, and Supabase/Google must be configured by the owner. Follow **[SUPABASE_SETUP.md](SUPABASE_SETUP.md)** for every setup button, redirect URL, SQL step and security check.
 
 The curriculum remains draft content pending owner confirmation. Confirm cohort dates, delivery format, final services and privacy/retention practices before accepting students. No payments are collected automatically. Owners can use the admin portal for admissions and verified payments, and the Supabase dashboard for publishing course files; the new admin interface is available after the database upgrade and admin bootstrap in [ADMIN_SETUP.md](ADMIN_SETUP.md).
 
@@ -79,7 +81,7 @@ Open `http://localhost:3000` on the same computer. Stop the server with Ctrl+C. 
 
 ## Authentication and data security
 
-Read [SUPABASE_SETUP.md](SUPABASE_SETUP.md). The portal uses Google OAuth with PKCE. Authenticated users can submit their own application and read their own records, but approval/payment writes are reserved for trusted operators. Row-level policies also gate private file access. Students get 60-second signed file links only when eligible. Google email comes from the authenticated account, not an editable form field. Database constraints validate application values independently of browser validation.
+Read [SUPABASE_SETUP.md](SUPABASE_SETUP.md). The portal uses Google OAuth with PKCE. Authenticated users can submit their own application and read their own records, but approval/payment writes are reserved for trusted operators. Row-level policies also gate private file access. Students get 60-second signed file links only when eligible. The verified Google/email address comes from the authenticated account, not an editable form field. Database constraints validate application values independently of browser validation.
 
 `npm test` includes an embedded Postgres (PGlite) test of the actual schema and RLS with two student identities plus an anonymous role. These local tests do not replace live Google OAuth and Supabase Storage tests after setup.
 

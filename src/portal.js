@@ -1,3 +1,4 @@
+import {initEmailAuth} from './email-auth.js';
 import { readCallback, authFeedback, cleanCallbackUrl } from './auth-feedback.js';
 import { createClient } from '@supabase/supabase-js';
 import { validateApplication, isConfigured, balanceFromPayments, paymentTotals, validateUpload } from './validation.js';
@@ -16,6 +17,7 @@ let currentUser;
 let loading = false;
 let identityVersion = 0;
 let currentApplication = null;
+let recoveryRequested = new URLSearchParams(location.search).get('flow') === 'recovery';
 let assignmentOptions = [];
 
 const money = amount => `KSh ${Number(amount).toLocaleString('en-KE')}`;
@@ -145,6 +147,9 @@ function initPortalMobileNav() {
 function showLogin() {
   identityVersion += 1;
   currentUser = null;
+  if ($('recovery-view')) $('recovery-view').hidden = true;
+  if ($('email-password')) $('email-password').value = '';
+  $('recovery-form')?.reset();
   currentApplication = null;
   assignmentOptions = [];
   for (const id of ['modules-list','submissions-list','payments-history-list','admission-letter-list']) $(id)?.replaceChildren();
@@ -592,6 +597,7 @@ async function start() {
   initAssignmentUpload();
   initPortalMobileNav();
   if (!isConfigured(config)) {
+    initEmailAuth({client:null,onSignedIn:loadMember,onRecoveryFinished:loadMember});
     showLogin();
     notice('Student sign-in is being set up. For enrolment help, WhatsApp 0742 330 046.');
     return;
@@ -602,7 +608,9 @@ async function start() {
     auth: { flowType: 'pkce', detectSessionInUrl: false, persistSession: true, autoRefreshToken: true }
   });
 
+  initEmailAuth({client,onSignedIn:async()=>{recoveryRequested=false;const url=new URL(location.href);url.searchParams.delete('flow');history.replaceState(null,'',url.pathname+url.search);await loadMember();},onRecoveryFinished:async()=>{recoveryRequested=false;await loadMember();}});
   client.auth.onAuthStateChange(event => {
+    if (event === 'PASSWORD_RECOVERY') recoveryRequested = true;
     if (event === 'SIGNED_OUT') {
       showLogin();
       notice('Please sign in to access your student account.');
@@ -616,16 +624,21 @@ async function start() {
       return;
     }
     if (callback.code) {
-      notice('Completing your Google sign-in…');
+      notice('Completing your sign-in…');
       const { error } = await client.auth.exchangeCodeForSession(callback.code);
       if (error) throw error;
     }
     const { data, error } = await client.auth.getSession();
     if (error) throw error;
-    if (data.session) await loadMember();
+    if (data.session && recoveryRequested) {
+      const {data:verified,error:verifyError}=await client.auth.getUser();
+      if(verifyError||!verified.user)throw verifyError||new Error('No session');
+      $('login-view').hidden=true; $('member-view').hidden=true; $('recovery-view').hidden=false;
+      $('new-password').focus(); notice('');
+    } else if (data.session) await loadMember();
     else {
       showLogin();
-      notice('');
+      notice(recoveryRequested?'Open the newest password reset email, or request a fresh reset link below.':'',recoveryRequested);
     }
   } catch (error) {
     showLogin();

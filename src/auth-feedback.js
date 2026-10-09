@@ -1,6 +1,8 @@
 // Only show known diagnostic codes and our own explanations. Never render raw
 // OAuth descriptions, callback URLs, authorization codes or provider tokens.
 const messages = {
+  otp_expired: 'This email link has expired or was already used. Request a fresh link from the portal.',
+  email_not_confirmed: 'Confirm your email before signing in, or request another confirmation email.',
   access_denied: 'Google access was declined. Start again and approve the sign-in request.',
   invalid_client: 'The Google client configuration needs checking in Supabase. The owner should verify that the Client ID and secret belong to the same Google web client.',
   external_code_exchange_failed: 'Supabase could not complete the Google callback. The owner should check Authentication logs and the Google provider Client ID, secret and callback URL.',

@@ -1,3 +1,5 @@
+> **Student email login is now supported:** Follow [EMAIL_SETUP.md](EMAIL_SETUP.md) to enable Email and configure SMTP. Keep Google enabled alongside it.
+
 > **Admissions update:** For the current admin portal, database fixes, admission numbers and email setup, follow [ADMIN_SETUP.md](ADMIN_SETUP.md). The guide below also explains the original Google/Supabase connection.
 
 # Google sign-in and student portal — setup guide
