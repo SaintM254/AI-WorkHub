@@ -39,10 +39,42 @@ document.addEventListener('keydown', event => {
   }
 });
 // Google sign-in precedes applications; returning students use the same portal.
+// Auth-state: swap 'Join now' → 'Student portal ↗' when a session exists.
+const PORTAL_URL = new URL('student.html', window.location.href).href;
+
+function setEnrolButtons(loggedIn) {
+  document.querySelectorAll('[data-enrol]').forEach(button => {
+    if (loggedIn) {
+      button.textContent = 'Student portal \u2197';
+    } else {
+      button.textContent = 'Join now \u2197';
+    }
+  });
+}
+
 document.querySelectorAll('[data-enrol]').forEach(button => button.addEventListener('click', () => {
   closeMenu();
-  window.location.assign(new URL('student.html', window.location.href).href);
+  window.location.assign(PORTAL_URL);
 }));
+
+// Detect session via Supabase (portal-config.js loads before this script)
+(async () => {
+  const cfg = window.AI_WORKHUB_CONFIG;
+  if (!cfg || !cfg.supabaseUrl || !cfg.supabasePublishableKey) return;
+  try {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    const sb = createClient(cfg.supabaseUrl, cfg.supabasePublishableKey, {
+      auth: { flowType: 'pkce', detectSessionInUrl: false, persistSession: true, autoRefreshToken: true }
+    });
+    const { data } = await sb.auth.getSession();
+    setEnrolButtons(!!(data && data.session));
+    sb.auth.onAuthStateChange((event, session) => {
+      setEnrolButtons(event === 'SIGNED_IN' || (event !== 'SIGNED_OUT' && !!session));
+    });
+  } catch (e) {
+    // Non-fatal: button stays as 'Join now' if Supabase unavailable
+  }
+})();
 document.querySelector('#year').textContent = new Date().getFullYear();
 
 // Android browser controls can shift the visual viewport relative to layout coordinates.
