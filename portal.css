@@ -44,7 +44,9 @@
 .mpesa-row strong{color:var(--ink);font-size:14px}
 
 /* Quick links in Overview */
-.overview-quick-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.overview-card{display:flex;flex-direction:column}
+.overview-quick-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto;padding-top:18px}
+.overview-quick-links .portal-secondary{display:inline-flex;align-items:center;justify-content:center;font:400 12px/1.7 Arial,Helvetica,sans-serif;min-height:44px}
 .tab-link-btn{font-size:12px}
 
 /* Responsive adjustments */
