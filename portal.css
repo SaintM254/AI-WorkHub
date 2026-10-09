@@ -68,11 +68,8 @@
 @media(max-width:800px){
   .portal-menu-toggle{display:flex}
   .portal-back-link{display:none}
-  .portal-menu-open .portal-menu-toggle span{background:var(--paper)}
-  .portal-menu-open .portal-menu-toggle{position:fixed;top:18px;right:20px;z-index:201;min-width:44px;min-height:44px}
-  .portal-menu-open .portal-menu-toggle span:first-child{transform:translateY(7px) rotate(45deg)}
-  .portal-menu-open .portal-menu-toggle span:last-child{transform:translateY(-7px) rotate(-45deg)}
-  .portal-menu-open .portal-menu-toggle span:nth-child(2){opacity:0}
+  /* The overlay has its own close button; hide the redundant header icon. */
+  .portal-menu-open .portal-menu-toggle{visibility:hidden;pointer-events:none}
 }
 
 /* ── Portal mobile nav overlay ── */
@@ -83,7 +80,7 @@
   .portal-mobile-nav .portal-menu-close{display:flex;align-items:center;justify-content:center;gap:14px;min-height:52px;width:min(100%,340px);background:none;border:1px solid rgba(248,247,240,.25);color:var(--paper);border-radius:4px;font-size:13px;margin-bottom:5vh;cursor:pointer}
   .portal-mobile-nav .portal-menu-close:hover{background:rgba(248,247,240,.08)}
   .portal-mobile-nav .portal-menu-close span{font-size:23px;line-height:1}
-  .portal-mobile-nav .portal-mobile-tab{background:none;border:0;color:var(--paper);font:400 clamp(26px,4.5vh,38px)/1.2 Georgia,serif;letter-spacing:-.7px;text-align:center;width:min(100%,380px);padding:13px 10px;min-height:52px;border-radius:6px;cursor:pointer}
+  .portal-mobile-nav .portal-mobile-tab{background:none;border:0;color:var(--paper);font:400 clamp(26px,4.5vh,38px)/1.2 Georgia,serif;letter-spacing:-.7px;text-align:left;width:min(100%,340px);padding:13px 0;min-height:52px;border-radius:6px;cursor:pointer}
   .portal-mobile-nav .portal-mobile-tab:hover{background:rgba(248,247,240,.08)}
   .portal-mobile-nav .portal-mobile-tab:focus-visible{outline:3px solid var(--paper);outline-offset:3px}
   body.portal-menu-open{overflow:hidden}

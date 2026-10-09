@@ -134,7 +134,7 @@ function initPortalMobileNav() {
     if (!nav.classList.contains('open')) return;
     if (event.key === 'Escape') { event.preventDefault(); closePortalMenu(true); }
     if (event.key === 'Tab') {
-      const items = [toggle, ...nav.querySelectorAll('button, a')];
+      const items = [...nav.querySelectorAll('button, a')];
       const first = items[0], last = items[items.length - 1];
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
