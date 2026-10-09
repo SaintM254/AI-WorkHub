@@ -83,6 +83,59 @@ function initTabs() {
   });
 }
 
+// PORTAL MOBILE NAV
+function initPortalMobileNav() {
+  const toggle = document.querySelector('.portal-menu-toggle');
+  const nav = document.getElementById('portal-mobile-nav');
+  const closeBtn = nav && nav.querySelector('.portal-menu-close');
+  if (!toggle || !nav) return;
+
+  function openPortalMenu() {
+    nav.classList.add('open');
+    toggle.setAttribute('aria-expanded', 'true');
+    toggle.setAttribute('aria-label', 'Close navigation');
+    document.body.classList.add('portal-menu-open');
+    closeBtn && closeBtn.focus();
+  }
+
+  function closePortalMenu(restoreFocus = false) {
+    const wasOpen = nav.classList.contains('open');
+    nav.classList.remove('open');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-label', 'Open navigation');
+    document.body.classList.remove('portal-menu-open');
+    if (restoreFocus && wasOpen) toggle.focus();
+  }
+
+  toggle.addEventListener('click', () => {
+    if (nav.classList.contains('open')) closePortalMenu(true);
+    else openPortalMenu();
+  });
+
+  closeBtn && closeBtn.addEventListener('click', () => closePortalMenu(true));
+
+  // Mobile tab buttons inside overlay
+  nav.querySelectorAll('.portal-mobile-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.getAttribute('data-tab');
+      closePortalMenu();
+      activateTab(target);
+    });
+  });
+
+  document.addEventListener('keydown', event => {
+    if (!nav.classList.contains('open')) return;
+    if (event.key === 'Escape') { event.preventDefault(); closePortalMenu(true); }
+    if (event.key === 'Tab') {
+      const items = [toggle, ...(closeBtn ? [closeBtn] : []), ...nav.querySelectorAll('.portal-mobile-tab')];
+      const first = items[0], last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
+  });
+}
+
+
 // SHOW LOGIN VIEW
 function showLogin() {
   identityVersion += 1;
@@ -591,6 +644,7 @@ $('student-application')?.addEventListener('submit', async event => {
 
 async function start() {
   initTabs();
+  initPortalMobileNav();
   if (!isConfigured(config)) {
     showLogin();
     notice('Student sign-in is being set up. For enrolment help, WhatsApp 0742 330 046.');
