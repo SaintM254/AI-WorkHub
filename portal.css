@@ -104,3 +104,7 @@
 .email-mode-buttons button:disabled,.email-help-actions button:disabled{opacity:.6;cursor:not-allowed}
 .recovery-card{max-width:520px;margin:30px auto}.recovery-card>p{margin-bottom:24px}.recovery-card .portal-secondary{margin-top:12px;width:100%}
 @media(min-width:801px){.login-layout{align-items:start}.portal-welcome{padding-top:50px}}
+
+/* Primary support CTA, using the app palette without changing action sizing. */
+.overview-quick-links .support-btn{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.overview-quick-links .support-btn:hover{background:#1b3025;border-color:#1b3025}
